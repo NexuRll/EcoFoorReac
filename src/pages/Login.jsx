@@ -25,10 +25,28 @@ export default function Login() {
       navigate("/");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
+      
+      // Mensajes de error más amigables según el código de error de Firebase
+      let errorMessage = 'Verifica tus credenciales e intenta nuevamente';
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No existe una cuenta con este correo electrónico. Por favor, regístrate primero.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Contraseña incorrecta. Por favor, verifica e intenta nuevamente.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'El formato del correo electrónico no es válido.';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = 'Esta cuenta ha sido deshabilitada. Contacta al administrador.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Demasiados intentos fallidos. Por favor, intenta más tarde o restablece tu contraseña.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+      }
+      
       Swal.fire({
         icon: 'error',
         title: 'Error al iniciar sesión',
-        text: error.message || 'Verifica tus credenciales e intenta nuevamente'
+        text: errorMessage
       });
     } finally {
       setLoading(false);

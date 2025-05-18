@@ -7,6 +7,12 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
+// Verificar si la autenticación está disponible
+console.log('Estado de autenticación:', {
+  authDisponible: !!auth,
+  dbDisponible: !!db
+});
+
 // Función para registrar un nuevo usuario
 export const registerUser = async (userData) => {
   try {

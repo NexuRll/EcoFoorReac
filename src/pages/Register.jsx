@@ -63,10 +63,24 @@ const Register = () => {
         navigate('/login');
       } catch (error) {
         console.error('Error al registrar usuario:', error);
+        
+        // Mensajes de error más amigables según el código de error de Firebase
+        let errorMessage = 'Hubo un problema al crear tu cuenta. Intenta nuevamente.';
+        
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'Este correo electrónico ya está registrado. Intenta iniciar sesión o usa otro correo.';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'El formato del correo electrónico no es válido.';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+        }
+        
         Swal.fire({
           icon: 'error',
           title: 'Error al registrar',
-          text: error.message || 'Hubo un problema al crear tu cuenta. Intenta nuevamente.'
+          text: errorMessage
         });
       } finally {
         setLoading(false);
