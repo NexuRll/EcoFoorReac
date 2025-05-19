@@ -4,13 +4,12 @@ import { auth } from "../services/firebase";
 import { AuthContext } from "./AuthContext";
 
 export const AuthProvider = ({ children }) => {
-    // Versión simplificada para depuración
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     
     useEffect(() => {
         try {
-            // Intentar conectar con Firebase
+            // Usamos try para tratar de conectar a firebase
             const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
                 console.log("Estado de autenticación cambiado:", currentUser);
                 setUser(currentUser);

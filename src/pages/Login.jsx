@@ -15,14 +15,31 @@ export default function Login() {
     setLoading(true);
     
     try {
-      await login(email, password);
+      const user = await login(email, password);
+      
+      // Determinar el tipo de usuario para el mensaje de bienvenida
+      let userTypeText = 'Usuario';
+      if (user.tipo === 'empresa') {
+        userTypeText = 'Empresa';
+      } else if (user.tipo === 'admin') {
+        userTypeText = 'Administrador';
+      }
+      
+      console.log('Tipo de usuario detectado:', user.tipo);
+      console.log('Redirigiendo a perfil...');
+      
       Swal.fire({
         icon: 'success',
-        title: '¡Bienvenido!',
+        title: `¡Bienvenido ${userTypeText}!`,
         text: 'Has iniciado sesión correctamente',
         timer: 1500
       });
-      navigate("/");
+      // Redirigir a la página de perfil en lugar de la página de inicio
+      console.log('Intentando navegar a /perfil');
+      setTimeout(() => {
+        navigate("/perfil");
+        console.log('Navegación completada');
+      }, 100); // Pequeño retraso para asegurar que la navegación ocurra después de que se complete el mensaje
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       
