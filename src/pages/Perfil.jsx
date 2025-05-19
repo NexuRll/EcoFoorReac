@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import CerrarSesion from '../context/CerrarSesion';
 
 const Perfil = () => {
   const { currentUser, logout, userType } = useAuth();
@@ -49,28 +50,7 @@ const Perfil = () => {
     fetchUserData();
   }, [currentUser, userType]);
 
-  const handleLogout = async () => {
-    setLoading(true);
-    try {
-      await logout();
-      Swal.fire({
-        icon: 'success',
-        title: 'Sesión cerrada',
-        text: 'Has cerrado sesión correctamente',
-        timer: 1500
-      });
-      navigate('/login');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo cerrar sesión: ' + error.message
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Ya no necesitamos esta función, usaremos el componente CerrarSesion
 
   return (
     <div className="container mt-5">
@@ -179,22 +159,7 @@ const Perfil = () => {
 
                   
                   <div className="d-grid gap-2 mt-4">
-                    <button 
-                      className="btn btn-danger" 
-                      onClick={handleLogout}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Cerrando sesión...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                        </>
-                      )}
-                    </button>
+                    <CerrarSesion />
                   </div>
                 </div>
               ) : (

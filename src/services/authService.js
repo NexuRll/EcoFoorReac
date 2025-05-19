@@ -3,7 +3,9 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut,
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -26,6 +28,9 @@ export const registerUser = async (userData) => {
       userData.contraseña
     );
     
+    // Enviar correo de verificación
+    await sendEmailVerification(userCredential.user);
+    
     // Guardar información adicional del usuario en Firestore
     await setDoc(doc(db, 'usuarios', userCredential.user.uid), {
       nombre: userData.nombre,
@@ -34,8 +39,12 @@ export const registerUser = async (userData) => {
       comuna: userData.comuna,
       telefono: userData.telefono || '',
       tipoUsuario: userData.tipoUsuario || 'cliente',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      emailVerified: false // Inicialmente no verificado
     });
+    
+    // Cerrar sesión inmediatamente para forzar la verificación de correo
+    await signOut(auth);
     
     return userCredential.user;
   } catch (error) {
@@ -69,12 +78,25 @@ export const loginUser = async (email, password) => {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           console.log('Autenticación exitosa como usuario:', userCredential.user.email);
+          
+          // Verificar si el correo electrónico ha sido verificado
+          if (!userCredential.user.emailVerified) {
+            console.error('Correo electrónico no verificado');
+            throw new Error('EMAIL_NOT_VERIFIED');
+          }
+          
           return {
             ...userCredential.user,
             tipo: 'usuario' // Identificar que es un usuario regular
           };
         } catch (authError) {
           console.error('Error en Firebase Auth:', authError.message);
+          
+          // Si el error es que el correo no está verificado, lanzamos un error específico
+          if (authError.message === 'EMAIL_NOT_VERIFIED') {
+            throw new Error('EMAIL_NOT_VERIFIED');
+          }
+          
           // Si todos fallan, lanzamos un error combinado
           throw new Error('Credenciales inválidas. Verifica tu correo y contraseña.');
         }
@@ -86,6 +108,25 @@ export const loginUser = async (email, password) => {
   }
 };
 
+// Función para reenviar el correo de verificación
+export const resendVerificationEmail = async (email, password) => {
+  try {
+    // Primero necesitamos iniciar sesión para obtener el objeto de usuario
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    
+    // Enviar el correo de verificación nuevamente
+    await sendEmailVerification(userCredential.user);
+    
+    // Cerrar sesión inmediatamente para que el usuario no pueda usar la aplicación
+    await signOut(auth);
+    
+    return true;
+  } catch (error) {
+    console.error('Error al reenviar correo de verificación:', error);
+    throw error;
+  }
+};
+
 // Función para cerrar sesión
 export const logoutUser = async () => {
   try {
@@ -93,6 +134,17 @@ export const logoutUser = async () => {
     return true;
   } catch (error) {
     console.error('Error al cerrar sesión:', error);
+    throw error;
+  }
+};
+
+// Función para enviar correo de recuperación de contraseña
+export const resetPassword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    console.error('Error al enviar correo de recuperación:', error);
     throw error;
   }
 };

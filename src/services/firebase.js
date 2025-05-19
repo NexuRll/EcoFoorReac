@@ -1,6 +1,6 @@
 // Importar Firebase v9 con sintaxis de módulos
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserSessionPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Configuración de Firebase usando variables de entorno
@@ -34,6 +34,23 @@ if (!getApps().length) {
 // Inicializar servicios
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Configurar Firebase para usar sesiones no persistentes (solo en memoria)
+// Esto hace que la sesión se cierre cuando se cierra la pestaña o el navegador
+setPersistence(auth, browserSessionPersistence)
+  .then(() => {
+    console.log('Firebase configurado para usar sesiones no persistentes');
+  })
+  .catch((error) => {
+    console.error('Error al configurar persistencia:', error);
+  });
+
+// Configurar evento para limpiar el almacenamiento local al cerrar la página
+window.addEventListener('beforeunload', () => {
+  // Limpiar datos de sesión almacenados localmente
+  localStorage.removeItem('firebase:authUser');
+  sessionStorage.removeItem('firebase:authUser');
+});
 
 // Mensaje de confirmación
 console.log('Firebase inicializado con proyecto:', firebaseConfig.projectId);

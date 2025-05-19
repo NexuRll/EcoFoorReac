@@ -57,10 +57,16 @@ const Register = () => {
         Swal.fire({
           icon: 'success',
           title: 'Registro exitoso',
-          text: 'Tu cuenta ha sido creada correctamente',
-          timer: 1500
+          html: `
+            <p>Tu cuenta ha sido creada correctamente.</p>
+            <p><strong>IMPORTANTE:</strong> Se ha enviado un correo de verificación a <b>${formData.correo}</b>.</p>
+            <p>Debes verificar tu correo electrónico antes de poder iniciar sesión.</p>
+            <p>Revisa tu bandeja de entrada y haz clic en el enlace de verificación.</p>
+          `,
+          confirmButtonText: 'Entendido'
+        }).then(() => {
+          navigate('/login');
         });
-        navigate('/login');
       } catch (error) {
         console.error('Error al registrar usuario:', error);
         

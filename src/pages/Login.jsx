@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useAuth } from "../context/AuthContext";
+import { resendVerificationEmail } from "../services/authService";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,28 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, error } = useAuth();
+
+  // Función para reenviar el correo de verificación
+  const handleResendVerificationEmail = async () => {
+    try {
+      setLoading(true);
+      await resendVerificationEmail(email, password);
+      Swal.fire({
+        icon: 'success',
+        title: 'Correo enviado',
+        text: 'Se ha enviado un nuevo correo de verificación. Por favor, revisa tu bandeja de entrada.'
+      });
+    } catch (error) {
+      console.error('Error al reenviar correo de verificación:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo reenviar el correo de verificación. Por favor, intenta nuevamente.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,7 +49,7 @@ export default function Login() {
       }
       
       console.log('Tipo de usuario detectado:', user.tipo);
-      console.log('Redirigiendo a perfil...');
+      console.log('Redirigiendo a catálogo...');
       
       Swal.fire({
         icon: 'success',
@@ -34,14 +57,33 @@ export default function Login() {
         text: 'Has iniciado sesión correctamente',
         timer: 1500
       });
-      // Redirigir a la página de perfil en lugar de la página de inicio
-      console.log('Intentando navegar a /perfil');
+      // Redirigir a la página de catálogo donde se muestra el HomeAuth
+      console.log('Intentando navegar a /catalogo');
       setTimeout(() => {
-        navigate("/perfil");
+        navigate("/catalogo");
         console.log('Navegación completada');
       }, 100); // Pequeño retraso para asegurar que la navegación ocurra después de que se complete el mensaje
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
+      
+      // Verificar si el error es de correo no verificado
+      if (error.message === 'EMAIL_NOT_VERIFIED') {
+        // Mostrar un mensaje especial para correo no verificado con opción de reenviar
+        Swal.fire({
+          icon: 'warning',
+          title: 'Correo no verificado',
+          text: 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.',
+          showCancelButton: true,
+          confirmButtonText: 'Reenviar correo de verificación',
+          cancelButtonText: 'Cerrar'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Reenviar correo de verificación
+            handleResendVerificationEmail();
+          }
+        });
+        return;
+      }
       
       // Mensajes de error más amigables según el código de error de Firebase
       let errorMessage = 'Verifica tus credenciales e intenta nuevamente';
@@ -112,9 +154,14 @@ export default function Login() {
                     </>
                   )}
                 </button>
-                <p className="mt-3 text-center">
-                  ¿No tienes una cuenta? <Link to="/register">Regístrate aquí</Link>
-                </p>
+                <div className="mt-3 text-center">
+                  <p>
+                    ¿No tienes una cuenta? <Link to="/register" className="text-success">Regístrate aquí</Link>
+                  </p>
+                  <p>
+                    <Link to="/recuperar-contrasena" className="text-success">¿Olvidaste tu contraseña?</Link>
+                  </p>
+                </div>
               </form>
             </div>
           </div>

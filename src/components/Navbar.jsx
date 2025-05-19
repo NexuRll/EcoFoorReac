@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -41,11 +41,11 @@ const Navbar = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto">
             <li className="nav-item">
-              <Link className="nav-link" to="/home">
+              <Link className="nav-link" to={currentUser ? "/catalogo" : "/home"}>
                 <i className="fas fa-home me-1"></i> Inicio
               </Link>
             </li>
-            {!user ? (
+            {!currentUser ? (
               <>
                 <li className="nav-item">
                   <Link className="nav-link" to="/login">
@@ -60,6 +60,11 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/catalogo">
+                    <i className="fas fa-leaf me-1"></i> Catálogo
+                  </Link>
+                </li>
                 <li className="nav-item">
                   <Link className="nav-link" to="/perfil">
                     <i className="fas fa-user me-1"></i> Perfil
