@@ -1,24 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       Swal.fire('Sesión cerrada', 'Has cerrado sesión correctamente', 'success');
       navigate('/login');
     } catch (error) {
       Swal.fire('Error', 'No se pudo cerrar sesión', 'error');
     }
   };
+
+  // Verificar si el usuario es administrador
+  const isAdmin = userData?.tipo === 'admin';
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-success">
@@ -41,7 +42,7 @@ const Navbar = () => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto">
             <li className="nav-item">
-              <Link className="nav-link" to={currentUser ? "/catalogo" : "/home"}>
+              <Link className="nav-link" to={currentUser ? "/catalogo" : "/"}>
                 <i className="fas fa-home me-1"></i> Inicio
               </Link>
             </li>
@@ -60,6 +61,14 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                {/* Mostrar enlace al panel de administración si es admin */}
+                {isAdmin && (
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/admin/dashboard">
+                      <i className="fas fa-cogs me-1"></i> Panel Admin
+                    </Link>
+                  </li>
+                )}
                 <li className="nav-item">
                   <Link className="nav-link" to="/catalogo">
                     <i className="fas fa-leaf me-1"></i> Catálogo

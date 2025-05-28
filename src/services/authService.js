@@ -8,15 +8,9 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 
-import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { verificarCredencialesEmpresa } from './empresaService';
 import { verificarCredencialesAdmin } from './adminService';
-
-// Verificar si la autenticación está disponible
-console.log('Estado de autenticación:', {
-  authDisponible: !!auth,
-  dbDisponible: !!db
-});
 
 // Función para registrar un nuevo usuario
 export const registerUser = async (userData) => {
@@ -58,30 +52,20 @@ export const loginUser = async (email, password) => {
   try {
     // Verificar primero si es un administrador
     try {
-      console.log('Intentando autenticar como administrador:', email);
       const admin = await verificarCredencialesAdmin(email, password);
-      console.log('Autenticación exitosa como administrador:', admin);
       return admin; // Devuelve la información del administrador si las credenciales son correctas
     } catch (adminError) {
-      console.log('No es un administrador, intentando como empresa:', adminError.message);
-      
       // Si no es un administrador, verificar si es una empresa
       try {
-        console.log('Intentando autenticar como empresa:', email);
         const empresa = await verificarCredencialesEmpresa(email, password);
-        console.log('Autenticación exitosa como empresa:', empresa);
         return empresa; // Devuelve la información de la empresa si las credenciales son correctas
       } catch (empresaError) {
-        console.log('No es una empresa, intentando con Firebase Auth:', empresaError.message);
-        
         // Si no es una empresa ni administrador, intentamos con Firebase Auth (usuarios regulares)
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          console.log('Autenticación exitosa como usuario:', userCredential.user.email);
           
           // Verificar si el correo electrónico ha sido verificado
           if (!userCredential.user.emailVerified) {
-            console.error('Correo electrónico no verificado');
             throw new Error('EMAIL_NOT_VERIFIED');
           }
           
@@ -90,8 +74,6 @@ export const loginUser = async (email, password) => {
             tipo: 'usuario' // Identificar que es un usuario regular
           };
         } catch (authError) {
-          console.error('Error en Firebase Auth:', authError.message);
-          
           // Si el error es que el correo no está verificado, lanzamos un error específico
           if (authError.message === 'EMAIL_NOT_VERIFIED') {
             throw new Error('EMAIL_NOT_VERIFIED');

@@ -35,6 +35,10 @@ if (!getApps().length) {
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Crear una instancia secundaria de autenticación para operaciones administrativas
+// Esto permite registrar usuarios sin afectar la sesión actual del usuario
+const secondaryAuth = getAuth(app);
+
 // Configurar Firebase para usar sesiones no persistentes (solo en memoria)
 // Esto hace que la sesión se cierre cuando se cierra la pestaña o el navegador
 setPersistence(auth, browserSessionPersistence)
@@ -55,4 +59,4 @@ window.addEventListener('beforeunload', () => {
 // Mensaje de confirmación
 console.log('Firebase inicializado con proyecto:', firebaseConfig.projectId);
 
-export { auth, db };
+export { auth, db, secondaryAuth };

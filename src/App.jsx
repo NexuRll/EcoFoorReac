@@ -1,71 +1,30 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
+import HomeAuth from './pages/HomeAuth';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Perfil from './pages/Perfil';
 import AuthWrapper from './components/AuthWrapper';
+import Navbar from './components/Navbar';
 import { useAuth } from './context/AuthContext';
+import AdminLayout from './components/layouts/Admin/AdminLayout';
+import ProtectedByRole from './routes/ProtectedByRole';
+import AdminUsuarios from './components/layouts/Admin/AdminUsuarios';
+import AdminConfig from './components/layouts/Admin/AdminConfig';
+import AdminEmpresas from './pages/empresas/AdminEmpresas';
+
+// Componentes para las rutas de administración (pueden ser temporales)
+const AdminDashboard = () => <div><h2>Panel de Administración</h2><p>Bienvenido al panel de administración de EcoFood</p></div>;
 
 // Componente que utiliza el contexto de autenticación
 const AppContent = () => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userData, loading } = useAuth();
   
   return (
     <div className="container-fluid p-0">
-      <nav className="navbar navbar-expand-lg navbar-dark bg-success mb-4">
-        <div className="container">
-          <Link className="navbar-brand" to="/">
-            <i className="fas fa-leaf me-2"></i>
-            EcoFood
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
-            aria-controls="navbarNav"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav ms-auto">
-              <li className="nav-item">
-                <Link className="nav-link" to="/">
-                  <i className="fas fa-home me-1"></i> Inicio
-                </Link>
-              </li>
-              
-              {currentUser ? (
-                // Opciones para usuarios autenticados
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/perfil">
-                      <i className="fas fa-user me-1"></i> Mi Perfil
-                    </Link>
-                  </li>
-                </>
-              ) : (
-                // Opciones para usuarios no autenticados
-                <>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/login">
-                      <i className="fas fa-sign-in-alt me-1"></i> Iniciar Sesión
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/register">
-                      <i className="fas fa-user-plus me-1"></i> Registrarse
-                    </Link>
-                  </li>
-                </>
-              )}
-            </ul>
-          </div>
-        </div>
-      </nav>
+      {/* No mostramos Navbar en rutas de administración */}
+      {!window.location.pathname.startsWith('/admin') && <Navbar />}
 
       <div className="container mt-4">
         {loading ? (
@@ -77,11 +36,28 @@ const AppContent = () => {
           </div>
         ) : (
           <Routes>
-            <Route path="/" element={<Home />} />
+            {/* Rutas públicas y de usuarios */}
+            <Route path="/" element={currentUser ? <HomeAuth /> : <Home />} />
             <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
             <Route path="/register" element={!currentUser ? <Register /> : <Navigate to="/" />} />
             <Route path="/perfil" element={currentUser ? <Perfil /> : <Navigate to="/login" />} />
-            <Route path="*" element={<Home />} />
+            <Route path="/catalogo" element={currentUser ? <HomeAuth /> : <Navigate to="/login" />} />
+            
+            {/* Rutas de administración protegidas */}
+            <Route path="/admin" element={
+              <ProtectedByRole allowed={['admin']}>
+                <AdminLayout />
+              </ProtectedByRole>
+            }>
+              <Route index element={<Navigate to="/admin/dashboard" />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="empresas" element={<AdminEmpresas />} />
+              <Route path="clientes" element={<AdminUsuarios />} />
+              <Route path="administradores" element={<AdminConfig />} />
+            </Route>
+            
+            {/* Ruta por defecto */}
+            <Route path="*" element={currentUser ? <HomeAuth /> : <Home />} />
           </Routes>
         )}
       </div>
