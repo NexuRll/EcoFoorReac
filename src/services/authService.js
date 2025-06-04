@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { verificarCredencialesEmpresa } from './empresaService';
 import { verificarCredencialesAdmin } from './adminService';
 
@@ -50,35 +50,80 @@ export const registerUser = async (userData) => {
 // Función para iniciar sesión (usuarios regulares, empresas o administradores)
 export const loginUser = async (email, password) => {
   try {
-    // Verificar primero si es un administrador
+    // Primero intentar con Firebase Auth (usuarios, empresas y administradores con Auth)
     try {
-      const admin = await verificarCredencialesAdmin(email, password);
-      return admin; // Devuelve la información del administrador si las credenciales son correctas
-    } catch (adminError) {
-      // Si no es un administrador, verificar si es una empresa
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Verificar si el correo electrónico ha sido verificado
+      // EXCEPCIÓN: admin@gmail.com no necesita verificación (cuenta principal)
+      const isAdminPrincipal = email.toLowerCase() === 'admin@gmail.com';
+      
+      if (!user.emailVerified && !isAdminPrincipal) {
+        await signOut(auth); // Cerrar sesión inmediatamente
+        throw new Error('EMAIL_NOT_VERIFIED');
+      }
+      
+      // Determinar el tipo de usuario buscando en las colecciones
+      // Buscar en administradores
       try {
-        const empresa = await verificarCredencialesEmpresa(email, password);
-        return empresa; // Devuelve la información de la empresa si las credenciales son correctas
-      } catch (empresaError) {
-        // Si no es una empresa ni administrador, intentamos con Firebase Auth (usuarios regulares)
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          
-          // Verificar si el correo electrónico ha sido verificado
-          if (!userCredential.user.emailVerified) {
-            throw new Error('EMAIL_NOT_VERIFIED');
-          }
-          
+        const adminRef = doc(db, 'Administrador', user.uid);
+        const adminDoc = await getDoc(adminRef);
+        
+        if (adminDoc.exists()) {
           return {
-            ...userCredential.user,
-            tipo: 'usuario' // Identificar que es un usuario regular
+            id: user.uid,
+            uid: user.uid,
+            email: user.email,
+            ...adminDoc.data(),
+            tipo: 'admin'
           };
-        } catch (authError) {
-          // Si el error es que el correo no está verificado, lanzamos un error específico
-          if (authError.message === 'EMAIL_NOT_VERIFIED') {
-            throw new Error('EMAIL_NOT_VERIFIED');
-          }
-          
+        }
+      } catch (adminError) {
+        console.log('No es administrador');
+      }
+      
+      // Buscar en empresas
+      try {
+        const empresaRef = doc(db, 'empresas', user.uid);
+        const empresaDoc = await getDoc(empresaRef);
+        
+        if (empresaDoc.exists()) {
+          return {
+            id: user.uid,
+            uid: user.uid,
+            email: user.email,
+            ...empresaDoc.data(),
+            tipo: 'empresa'
+          };
+        }
+      } catch (empresaError) {
+        console.log('No es empresa');
+      }
+      
+      // Si no es admin ni empresa, es usuario regular
+      return {
+        ...user,
+        tipo: 'usuario'
+      };
+      
+    } catch (authError) {
+      // Si el error es que el correo no está verificado, lanzamos un error específico
+      if (authError.message === 'EMAIL_NOT_VERIFIED') {
+        throw new Error('EMAIL_NOT_VERIFIED');
+      }
+      
+      // Si no funciona con Firebase Auth, intentar con el sistema legacy
+      // Verificar primero si es un administrador (legacy)
+      try {
+        const admin = await verificarCredencialesAdmin(email, password);
+        return admin; // Devuelve la información del administrador si las credenciales son correctas
+      } catch (adminError) {
+        // Si no es un administrador, verificar si es una empresa (legacy)
+        try {
+          const empresa = await verificarCredencialesEmpresa(email, password);
+          return empresa; // Devuelve la información de la empresa si las credenciales son correctas
+        } catch (empresaError) {
           // Si todos fallan, lanzamos un error combinado
           throw new Error('Credenciales inválidas. Verifica tu correo y contraseña.');
         }

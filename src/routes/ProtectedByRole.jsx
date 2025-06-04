@@ -2,7 +2,19 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedByRole({ allowed, children }) {
-  const { userData, loading } = useAuth();
+  const { userData, loading, userType } = useAuth();
+  
+  // Debug logs para diagnosticar problemas de autorización
+  console.log('=== PROTECTED BY ROLE DEBUG ===');
+  console.log('allowed:', allowed);
+  console.log('userData:', userData);
+  console.log('userType:', userType);
+  console.log('userData?.tipo:', userData?.tipo);
+  console.log('loading:', loading);
+  console.log('Does userData exist?', !!userData);
+  console.log('Is tipo in allowed?', userData ? allowed.includes(userData.tipo) : 'no userData');
+  console.log('Is userType in allowed?', allowed.includes(userType));
+  console.log('==============================');
   
   if (loading) {
     return (
@@ -15,9 +27,15 @@ export default function ProtectedByRole({ allowed, children }) {
     );
   }
   
-  if (!userData || !allowed.includes(userData.tipo)) {
+  // Verificar tanto userData.tipo como userType por compatibilidad
+  const tipoUsuario = userData?.tipo || userType;
+  
+  if (!userData || !allowed.includes(tipoUsuario)) {
+    console.log('ACCESO DENEGADO - Redirigiendo al login');
+    console.log('Razón: userData existe?', !!userData, '| tipo válido?', allowed.includes(tipoUsuario));
     return <Navigate to="/login" replace />;
   }
   
+  console.log('ACCESO PERMITIDO - Renderizando children');
   return children;
 }

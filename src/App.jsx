@@ -13,13 +13,36 @@ import ProtectedByRole from './routes/ProtectedByRole';
 import AdminUsuarios from './components/layouts/Admin/AdminUsuarios';
 import AdminConfig from './components/layouts/Admin/AdminConfig';
 import AdminEmpresas from './pages/empresas/AdminEmpresas';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
-// Componentes para las rutas de administración (pueden ser temporales)
-const AdminDashboard = () => <div><h2>Panel de Administración</h2><p>Bienvenido al panel de administración de EcoFood</p></div>;
+// Componente temporal de prueba para admin
+const AdminTest = () => {
+  const { userData, userType } = useAuth();
+  return (
+    <div className="container">
+      <div className="alert alert-info">
+        <h4>Prueba de Acceso de Administrador</h4>
+        <p><strong>userData:</strong> {JSON.stringify(userData, null, 2)}</p>
+        <p><strong>userType:</strong> {userType}</p>
+        <p><strong>userData?.tipo:</strong> {userData?.tipo}</p>
+      </div>
+    </div>
+  );
+};
 
 // Componente que utiliza el contexto de autenticación
 const AppContent = () => {
-  const { currentUser, userData, loading } = useAuth();
+  const { currentUser, userData, userType, loading } = useAuth();
+  
+  // Debug info para diagnosticar problemas de autenticación
+  console.log('=== DEBUG INFO ===');
+  console.log('currentUser:', currentUser);
+  console.log('userData:', userData);
+  console.log('userType:', userType);
+  console.log('loading:', loading);
+  console.log('userData?.tipo:', userData?.tipo);
+  console.log('window.location.pathname:', window.location.pathname);
+  console.log('==================');
   
   return (
     <div className="container-fluid p-0">
@@ -42,6 +65,11 @@ const AppContent = () => {
             <Route path="/register" element={!currentUser ? <Register /> : <Navigate to="/" />} />
             <Route path="/perfil" element={currentUser ? <Perfil /> : <Navigate to="/login" />} />
             <Route path="/catalogo" element={currentUser ? <HomeAuth /> : <Navigate to="/login" />} />
+            
+            {/* Ruta temporal de prueba para admin */}
+            <Route path="/admin-test" element={
+              userData ? <AdminTest /> : <Navigate to="/login" />
+            } />
             
             {/* Rutas de administración protegidas */}
             <Route path="/admin" element={

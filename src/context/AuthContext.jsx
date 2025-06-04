@@ -18,28 +18,36 @@ export const AuthProvider = ({ children }) => {
   // Función para obtener datos adicionales del usuario desde Firestore
   const fetchUserData = async (uid) => {
     try {
+      console.log('fetchUserData - Buscando datos para UID:', uid);
+      
       const userDocRef = doc(db, "usuarios", uid);
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
+        console.log('Usuario encontrado en colección usuarios');
         return { id: userDoc.id, ...userDoc.data(), tipo: userDoc.data().tipo || 'usuario' };
       } else {
+        console.log('Usuario no encontrado en usuarios, buscando en empresas...');
         // Intentar buscar en colección de empresas si no es un usuario regular
         const empresaDocRef = doc(db, "empresas", uid);
         const empresaDoc = await getDoc(empresaDocRef);
         
         if (empresaDoc.exists()) {
+          console.log('Usuario encontrado en colección empresas');
           return { id: empresaDoc.id, ...empresaDoc.data(), tipo: 'empresa' };
         } else {
-          // Intentar buscar en colección de administradores
-          const adminDocRef = doc(db, "administradores", uid);
+          console.log('Usuario no encontrado en empresas, buscando en administradores...');
+          // Intentar buscar en colección de administradores (corregido el nombre)
+          const adminDocRef = doc(db, "Administrador", uid);
           const adminDoc = await getDoc(adminDocRef);
           
           if (adminDoc.exists()) {
+            console.log('Usuario encontrado en colección Administrador');
             return { id: adminDoc.id, ...adminDoc.data(), tipo: 'admin' };
           }
         }
       }
+      console.log('Usuario no encontrado en ninguna colección');
       return null;
     } catch (error) {
       console.error("Error al obtener datos del usuario:", error);
@@ -52,15 +60,18 @@ export const AuthProvider = ({ children }) => {
     try {
       // Suscribirse a los cambios en el estado de autenticación
       const unsubscribe = subscribeToAuthChanges(async (user) => {
-        console.log("Estado de autenticación cambiado:", user);
+        console.log("=== AuthContext - Estado de autenticación cambiado ===");
+        console.log("user:", user);
         
         if (user) {
           setCurrentUser(user);
           
           // Obtener datos adicionales del usuario desde Firestore
           const additionalData = await fetchUserData(user.uid);
+          console.log("additionalData obtenida:", additionalData);
           setUserData(additionalData);
           setUserType(additionalData?.tipo || 'usuario');
+          console.log("userType establecido:", additionalData?.tipo || 'usuario');
         } else {
           setCurrentUser(null);
           setUserData(null);
@@ -68,6 +79,7 @@ export const AuthProvider = ({ children }) => {
         }
         
         setLoading(false);
+        console.log("=== Fin AuthContext - Estado actualizado ===");
       });
       
       // Configurar el evento beforeunload para cerrar sesión cuando se cierra la página
@@ -108,20 +120,30 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setError(null);
     try {
+      console.log('=== AuthContext - Login iniciado ===');
       const user = await loginUser(email, password);
+      console.log('Usuario retornado por loginUser:', user);
       
-      // Guardar el tipo de usuario (usuario, empresa o admin)
+      // Guardar el tipo de usuario (usuario/cliente, empresa o admin)
       if (user) {
-        setUserType(user.tipo || 'usuario');
+        // Normalizar el tipo de usuario
+        let tipoUsuario = user.tipo || 'cliente';
+        if (tipoUsuario === 'usuario') {
+          tipoUsuario = 'cliente'; // Normalizar 'usuario' a 'cliente'
+        }
+        
+        console.log('Estableciendo userType:', tipoUsuario);
+        setUserType(tipoUsuario);
         
         // Si es una empresa o un administrador, actualizamos el estado manualmente
-        if (user.tipo === 'empresa' || user.tipo === 'admin') {
-          console.log('Actualizando estado para:', user.tipo);
+        if (tipoUsuario === 'empresa' || tipoUsuario === 'admin') {
+          console.log('Actualizando estado manualmente para:', tipoUsuario);
           setCurrentUser(user);
           setUserData(user);
         }
       }
       
+      console.log('=== Fin AuthContext - Login completado ===');
       return user;
     } catch (error) {
       setError(error.message);

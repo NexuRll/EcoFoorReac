@@ -5,107 +5,130 @@ import { useAuth } from "../context/AuthContext";
 import { resendVerificationEmail } from "../services/authService";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    correo: '',
+    contraseña: ''
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, error } = useAuth();
+  const { login } = useAuth();
 
-  // Función para reenviar el correo de verificación
-  const handleResendVerificationEmail = async () => {
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      setLoading(true);
-      await resendVerificationEmail(email, password);
+      const user = await login(formData.correo, formData.contraseña);
+      
+      console.log('Usuario logueado:', user);
+      console.log('Tipo de usuario:', user?.tipo);
+      
       Swal.fire({
         icon: 'success',
-        title: 'Correo enviado',
-        text: 'Se ha enviado un nuevo correo de verificación. Por favor, revisa tu bandeja de entrada.'
+        title: '¡Bienvenido!',
+        text: 'Has iniciado sesión correctamente',
+        timer: 1500,
+        showConfirmButton: false
       });
+
+      // Redirigir según el tipo de usuario
+      if (user?.tipo === 'admin') {
+        console.log('Redirigiendo a admin dashboard...');
+        navigate('/admin/dashboard');
+      } else if (user?.tipo === 'empresa') {
+        console.log('Redirigiendo a perfil de empresa...');
+        navigate('/perfil'); // Redirigir a perfil común, se diferenciará por tipo
+      } else {
+        console.log('Redirigiendo a perfil de cliente...');
+        navigate('/perfil'); // Redirigir a perfil común, se diferenciará por tipo
+      }
     } catch (error) {
-      console.error('Error al reenviar correo de verificación:', error);
+      console.error('Error en login:', error);
+      
+      let errorMessage = 'Error al iniciar sesión';
+      
+      if (error.message === 'EMAIL_NOT_VERIFIED') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Correo no verificado',
+          text: 'Por favor verifica tu correo electrónico antes de iniciar sesión.',
+          showCancelButton: true,
+          confirmButtonText: 'Reenviar correo',
+          cancelButtonText: 'Cancelar'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              // Implementar reenvío de correo de verificación
+              Swal.fire({
+                icon: 'info',
+                title: 'Correo reenviado',
+                text: 'Revisa tu bandeja de entrada'
+              });
+            } catch (resendError) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo reenviar el correo'
+              });
+            }
+          }
+        });
+        return;
+      }
+      
+      if (error.message.includes('invalid-credential') || error.message.includes('user-not-found')) {
+        errorMessage = 'Correo o contraseña incorrectos';
+      } else if (error.message.includes('too-many-requests')) {
+        errorMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
+      } else {
+        errorMessage = error.message || 'Error desconocido';
+      }
+      
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'No se pudo reenviar el correo de verificación. Por favor, intenta nuevamente.'
+        title: 'Error de autenticación',
+        text: errorMessage
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  // Función para prueba rápida de admin
+  const testAdminLogin = async () => {
     setLoading(true);
-    
     try {
-      const user = await login(email, password);
+      // Usar credenciales de prueba (puedes cambiar estos valores)
+      const testCredentials = {
+        correo: 'admin@ecofood.com',
+        contraseña: 'admin123'
+      };
       
-      // Determinar el tipo de usuario para el mensaje de bienvenida
-      let userTypeText = 'Usuario';
-      if (user.tipo === 'empresa') {
-        userTypeText = 'Empresa';
-      } else if (user.tipo === 'admin') {
-        userTypeText = 'Administrador';
-      }
+      const user = await login(testCredentials.correo, testCredentials.contraseña);
+      console.log('Test admin login result:', user);
       
-      console.log('Tipo de usuario detectado:', user.tipo);
-      console.log('Redirigiendo a catálogo...');
-      
-      Swal.fire({
-        icon: 'success',
-        title: `¡Bienvenido ${userTypeText}!`,
-        text: 'Has iniciado sesión correctamente',
-        timer: 1500
-      });
-      // Redirigir a la página de catálogo donde se muestra el HomeAuth
-      console.log('Intentando navegar a /catalogo');
-      setTimeout(() => {
-        navigate("/catalogo");
-        console.log('Navegación completada');
-      }, 100); // Pequeño retraso para asegurar que la navegación ocurra después de que se complete el mensaje
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      
-      // Verificar si el error es de correo no verificado
-      if (error.message === 'EMAIL_NOT_VERIFIED') {
-        // Mostrar un mensaje especial para correo no verificado con opción de reenviar
+      if (user?.tipo === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
         Swal.fire({
-          icon: 'warning',
-          title: 'Correo no verificado',
-          text: 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.',
-          showCancelButton: true,
-          confirmButtonText: 'Reenviar correo de verificación',
-          cancelButtonText: 'Cerrar'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Reenviar correo de verificación
-            handleResendVerificationEmail();
-          }
+          icon: 'info',
+          title: 'Usuario de prueba',
+          text: `Tipo de usuario: ${user?.tipo || 'desconocido'}`
         });
-        return;
       }
-      
-      // Mensajes de error más amigables según el código de error de Firebase
-      let errorMessage = 'Verifica tus credenciales e intenta nuevamente';
-      
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No existe una cuenta con este correo electrónico. Por favor, regístrate primero.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Contraseña incorrecta. Por favor, verifica e intenta nuevamente.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'El formato del correo electrónico no es válido.';
-      } else if (error.code === 'auth/user-disabled') {
-        errorMessage = 'Esta cuenta ha sido deshabilitada. Contacta al administrador.';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Demasiados intentos fallidos. Por favor, intenta más tarde o restablece tu contraseña.';
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
-      }
-      
+    } catch (error) {
+      console.error('Error en test admin:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error al iniciar sesión',
-        text: errorMessage
+        title: 'Error de prueba',
+        text: `No se pudo hacer login de prueba: ${error.message}`
       });
     } finally {
       setLoading(false);
@@ -121,15 +144,17 @@ export default function Login() {
               <h2 className="mb-0">Iniciar Sesión</h2>
             </div>
             <div className="card-body">
-              <form onSubmit={handleLogin}>
+              <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label">Correo Electrónico</label>
                   <input
                     type="email"
                     className="form-control"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.correo}
+                    onChange={handleChange}
+                    name="correo"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="mb-3">
@@ -137,9 +162,11 @@ export default function Login() {
                   <input
                     type="password"
                     className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.contraseña}
+                    onChange={handleChange}
+                    name="contraseña"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <button type="submit" className="btn btn-success w-100" disabled={loading}>
@@ -153,6 +180,15 @@ export default function Login() {
                       <i className="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
                     </>
                   )}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-warning w-100 mb-3"
+                  onClick={testAdminLogin}
+                  disabled={loading}
+                >
+                  <i className="fas fa-cog me-2"></i>
+                  Probar Login Admin
                 </button>
                 <div className="mt-3 text-center">
                   <p>
