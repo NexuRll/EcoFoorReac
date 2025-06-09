@@ -6,9 +6,9 @@ import Swal from 'sweetalert2';
  * Componente para mostrar la lista de empresas
  * @param {Object} props - Propiedades del componente
  * @param {Function} props.onEdit - Función a ejecutar cuando se quiere editar una empresa
- * @param {Function} props.onView - Función a ejecutar cuando se quiere ver detalles de una empresa
+ * @param {Function} props.onPasswordChange - Función a ejecutar cuando se quiere cambiar contraseña de una empresa
  */
-export default function EmpresasList({ onEdit, onView }) {
+export default function EmpresasList({ onEdit, onPasswordChange }) {
   // Estado para almacenar la lista de empresas
   const [empresas, setEmpresas] = useState([]);
   
@@ -185,23 +185,23 @@ export default function EmpresasList({ onEdit, onView }) {
                     <td className="text-center">
                       <div className="btn-group">
                         <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => onView && onView(empresa.id)}
-                          title="Ver detalles"
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>
-                        <button
                           className="btn btn-sm btn-outline-secondary"
                           onClick={() => onEdit && onEdit(empresa.id)}
-                          title="Editar"
+                          title="Editar empresa"
                         >
                           <i className="fas fa-edit"></i>
                         </button>
                         <button
+                          className="btn btn-sm btn-outline-warning"
+                          onClick={() => onPasswordChange && onPasswordChange(empresa.id)}
+                          title="Cambiar contraseña"
+                        >
+                          <i className="fas fa-lock"></i>
+                        </button>
+                        <button
                           className="btn btn-sm btn-outline-danger"
                           onClick={() => handleEliminar(empresa.id, empresa.nombre)}
-                          title="Eliminar"
+                          title="Eliminar empresa"
                         >
                           <i className="fas fa-trash"></i>
                         </button>

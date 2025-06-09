@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import EmpresasList from '../../components/layouts/Empresas/EmpresasList';
 import EmpresaForm from '../../components/layouts/Empresas/EmpresaForm';
+import CambiarPasswordEmpresa from '../../components/layouts/Empresas/CambiarPasswordEmpresa';
 
 /**
  * Página para administrar empresas (CRUD)
  */
 export default function AdminEmpresas() {
   // Estado para controlar la vista actual
-  const [vista, setVista] = useState('lista'); // 'lista', 'crear', 'editar'
+  const [vista, setVista] = useState('lista'); // 'lista', 'crear', 'editar', 'cambiarPassword'
   
   // Estado para almacenar el ID de la empresa en edición
   const [empresaId, setEmpresaId] = useState(null);
@@ -23,6 +24,12 @@ export default function AdminEmpresas() {
     setEmpresaId(id);
     setVista('editar');
   };
+
+  // Función para cambiar a la vista de cambio de contraseña
+  const handleCambiarPassword = (id) => {
+    setEmpresaId(id);
+    setVista('cambiarPassword');
+  };
   
   // Función para volver a la lista después de guardar o cancelar
   const handleVolverALista = () => {
@@ -37,6 +44,7 @@ export default function AdminEmpresas() {
           {vista === 'lista' && 'Gestión de Empresas'}
           {vista === 'crear' && 'Crear Nueva Empresa'}
           {vista === 'editar' && 'Editar Empresa'}
+          {vista === 'cambiarPassword' && 'Cambiar Contraseña'}
         </h2>
         
         {vista === 'lista' ? (
@@ -61,15 +69,20 @@ export default function AdminEmpresas() {
       {vista === 'lista' && (
         <EmpresasList 
           onEdit={handleEditarEmpresa}
-          onView={(id) => {
-            // Por ahora simplemente editamos, pero podría ser una vista de detalles
-            handleEditarEmpresa(id);
-          }}
+          onPasswordChange={handleCambiarPassword}
         />
       )}
       
       {(vista === 'crear' || vista === 'editar') && (
         <EmpresaForm 
+          empresaId={empresaId}
+          onSave={handleVolverALista}
+          onCancel={handleVolverALista}
+        />
+      )}
+      
+      {vista === 'cambiarPassword' && (
+        <CambiarPasswordEmpresa 
           empresaId={empresaId}
           onSave={handleVolverALista}
           onCancel={handleVolverALista}

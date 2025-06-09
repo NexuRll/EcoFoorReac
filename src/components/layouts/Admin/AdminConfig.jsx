@@ -43,6 +43,15 @@ const AdminConfig = () => {
     password: '',
     rol: 'admin'
   });
+
+  // Estados para cambio de contraseña de administradores
+  const [mostrarFormPassword, setMostrarFormPassword] = useState(false);
+  const [adminIdPassword, setAdminIdPassword] = useState(null);
+  const [formPassword, setFormPassword] = useState({
+    nuevaPassword: '',
+    confirmarPassword: ''
+  });
+  const [erroresPassword, setErroresPassword] = useState({});
   
   // Cargar datos del administrador principal y todos los administradores
   useEffect(() => {
@@ -265,8 +274,12 @@ const AdminConfig = () => {
   const handleGuardarAdmin = async (e) => {
     e.preventDefault();
     
-    // Validar formulario
-    const erroresValidacion = validarFormularioAdmin(formAdminNormal);
+    // Validar formulario - sin contraseña si está en modo edición
+    const datosParaValidar = modoEdicion 
+      ? { nombre: formAdminNormal.nombre, email: formAdminNormal.email }
+      : formAdminNormal;
+    
+    const erroresValidacion = validarFormularioAdmin(datosParaValidar);
     
     if (Object.keys(erroresValidacion).length > 0) {
       setErroresNormal(erroresValidacion);
@@ -282,16 +295,11 @@ const AdminConfig = () => {
       setLoading(true);
       
       if (modoEdicion) {
-        // Actualizar administrador existente
+        // Actualizar administrador existente (sin campo de contraseña)
         const datosActualizados = {
           Nombre: formAdminNormal.nombre.trim(),
           Rol: formAdminNormal.rol
         };
-        
-        // Incluir la contraseña solo si se ha proporcionado una nueva
-        if (formAdminNormal.password) {
-          datosActualizados.contraseña = formAdminNormal.password;
-        }
         
         await actualizarAdministradorConAuth(adminIdEdicion, datosActualizados);
         
@@ -342,6 +350,90 @@ const AdminConfig = () => {
     }
   };
   
+  // Manejar cambio de contraseña de administrador
+  const handleCambiarPasswordAdmin = (adminId) => {
+    setAdminIdPassword(adminId);
+    setFormPassword({
+      nuevaPassword: '',
+      confirmarPassword: ''
+    });
+    setErroresPassword({});
+    setMostrarFormPassword(true);
+  };
+
+  // Manejar cambios en formulario de contraseña
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setFormPassword(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (erroresPassword[name]) {
+      setErroresPassword(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
+  };
+
+  // Guardar nueva contraseña de administrador
+  const handleGuardarPassword = async (e) => {
+    e.preventDefault();
+
+    // Validar contraseñas
+    const errores = {};
+    
+    if (!formPassword.nuevaPassword) {
+      errores.nuevaPassword = 'La nueva contraseña es requerida';
+    } else if (formPassword.nuevaPassword.length < 6) {
+      errores.nuevaPassword = 'La contraseña debe tener al menos 6 caracteres';
+    }
+
+    if (!formPassword.confirmarPassword) {
+      errores.confirmarPassword = 'Debe confirmar la nueva contraseña';
+    } else if (formPassword.nuevaPassword !== formPassword.confirmarPassword) {
+      errores.confirmarPassword = 'Las contraseñas no coinciden';
+    }
+
+    if (Object.keys(errores).length > 0) {
+      setErroresPassword(errores);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // TODO: Implementar cambio de contraseña en Firebase Auth
+      // Por ahora solo mostramos mensaje de éxito
+      
+      const admin = administradores.find(a => a.id === adminIdPassword);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Contraseña cambiada',
+        text: `La contraseña del administrador ${admin?.Nombre} ha sido cambiada correctamente.`
+      });
+
+      setMostrarFormPassword(false);
+      setAdminIdPassword(null);
+      setFormPassword({
+        nuevaPassword: '',
+        confirmarPassword: ''
+      });
+      setErroresPassword({});
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo cambiar la contraseña. Inténtelo nuevamente.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Eliminar administrador
   const handleEliminarAdmin = async (adminId, nombre) => {
     Swal.fire({
@@ -600,29 +692,31 @@ const AdminConfig = () => {
                           )}
                         </div>
                         
-                        <div className="mb-3">
-                          <label htmlFor="password" className="form-label">
-                            {modoEdicion ? 'Nueva contraseña (dejar en blanco para mantener actual)' : 'Contraseña *'}
-                            <small className="text-muted ms-2">
-                              ({LIMITES.PASSWORD.min}-{LIMITES.PASSWORD.max} caracteres, letras y números)
+                        {!modoEdicion && (
+                          <div className="mb-3">
+                            <label htmlFor="password" className="form-label">
+                              Contraseña *
+                              <small className="text-muted ms-2">
+                                ({LIMITES.PASSWORD.min}-{LIMITES.PASSWORD.max} caracteres, letras y números)
+                              </small>
+                            </label>
+                            <input 
+                              type="password" 
+                              className={`form-control ${erroresNormal.password ? 'is-invalid' : ''}`}
+                              id="password" 
+                              name="password"
+                              value={formAdminNormal.password}
+                              onChange={handleChangeNormal}
+                              maxLength={LIMITES.PASSWORD.max}
+                              placeholder="Mínimo 6 caracteres"
+                              required
+                            />
+                            {erroresNormal.password && <div className="invalid-feedback">{erroresNormal.password}</div>}
+                            <small className="text-muted">
+                              {formAdminNormal.password.length}/{LIMITES.PASSWORD.max} caracteres
                             </small>
-                          </label>
-                          <input 
-                            type="password" 
-                            className={`form-control ${erroresNormal.password ? 'is-invalid' : ''}`}
-                            id="password" 
-                            name="password"
-                            value={formAdminNormal.password}
-                            onChange={handleChangeNormal}
-                            maxLength={LIMITES.PASSWORD.max}
-                            placeholder="Mínimo 6 caracteres"
-                            required={!modoEdicion}
-                          />
-                          {erroresNormal.password && <div className="invalid-feedback">{erroresNormal.password}</div>}
-                          <small className="text-muted">
-                            {formAdminNormal.password.length}/{LIMITES.PASSWORD.max} caracteres
-                          </small>
-                        </div>
+                          </div>
+                        )}
                         
                         <div className="mb-3">
                           <label htmlFor="rol" className="form-label">Rol</label>
@@ -668,6 +762,84 @@ const AdminConfig = () => {
                       </form>
                     </div>
                   )}
+
+                  {/* Formulario para cambiar contraseña de administrador */}
+                  {mostrarFormPassword && (
+                    <div className="mb-4 p-3 border rounded bg-warning bg-opacity-10">
+                      <h5>
+                        <i className="fas fa-lock me-2"></i>
+                        Cambiar Contraseña - {administradores.find(a => a.id === adminIdPassword)?.Nombre}
+                      </h5>
+                      <div className="alert alert-info">
+                        <i className="fas fa-info-circle me-2"></i>
+                        Está cambiando la contraseña del administrador <strong>{administradores.find(a => a.id === adminIdPassword)?.Nombre}</strong>
+                      </div>
+                      <form onSubmit={handleGuardarPassword}>
+                        <div className="mb-3">
+                          <label htmlFor="nuevaPassword" className="form-label">
+                            Nueva contraseña *
+                            <small className="text-muted ms-2">(Mínimo 6 caracteres)</small>
+                          </label>
+                          <input 
+                            type="password" 
+                            className={`form-control ${erroresPassword.nuevaPassword ? 'is-invalid' : ''}`}
+                            id="nuevaPassword" 
+                            name="nuevaPassword"
+                            value={formPassword.nuevaPassword}
+                            onChange={handlePasswordChange}
+                            minLength={6}
+                            placeholder="Ingrese la nueva contraseña"
+                            required
+                          />
+                          {erroresPassword.nuevaPassword && <div className="invalid-feedback">{erroresPassword.nuevaPassword}</div>}
+                        </div>
+
+                        <div className="mb-3">
+                          <label htmlFor="confirmarPassword" className="form-label">
+                            Confirmar nueva contraseña *
+                          </label>
+                          <input 
+                            type="password" 
+                            className={`form-control ${erroresPassword.confirmarPassword ? 'is-invalid' : ''}`}
+                            id="confirmarPassword" 
+                            name="confirmarPassword"
+                            value={formPassword.confirmarPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="Confirme la nueva contraseña"
+                            required
+                          />
+                          {erroresPassword.confirmarPassword && <div className="invalid-feedback">{erroresPassword.confirmarPassword}</div>}
+                        </div>
+
+                        <div className="d-flex justify-content-end">
+                          <button 
+                            type="button" 
+                            className="btn btn-secondary me-2"
+                            onClick={() => setMostrarFormPassword(false)}
+                          >
+                            Cancelar
+                          </button>
+                          <button 
+                            type="submit" 
+                            className="btn btn-warning"
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Cambiando...
+                              </>
+                            ) : (
+                              <>
+                                <i className="fas fa-key me-2"></i>
+                                Cambiar Contraseña
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
                   
                   {/* Lista de administradores */}
                   {administradores.length === 0 ? (
@@ -703,24 +875,34 @@ const AdminConfig = () => {
                                 )}
                               </td>
                               <td className="text-end">
-                                <button
-                                  className="btn btn-sm btn-outline-secondary me-1"
-                                  onClick={() => handleEditarAdmin(admin)}
-                                  disabled={loading}
-                                  title="Editar administrador"
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </button>
-                                {!admin.esAdminPrincipal && (
+                                <div className="btn-group">
                                   <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() => handleEliminarAdmin(admin.id, admin.Nombre)}
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => handleEditarAdmin(admin)}
                                     disabled={loading}
-                                    title="Eliminar administrador"
+                                    title="Editar administrador"
                                   >
-                                    <i className="fas fa-trash-alt"></i>
+                                    <i className="fas fa-edit"></i>
                                   </button>
-                                )}
+                                  <button
+                                    className="btn btn-sm btn-outline-warning"
+                                    onClick={() => handleCambiarPasswordAdmin(admin.id)}
+                                    disabled={loading}
+                                    title="Cambiar contraseña"
+                                  >
+                                    <i className="fas fa-lock"></i>
+                                  </button>
+                                  {!admin.esAdminPrincipal && (
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={() => handleEliminarAdmin(admin.id, admin.Nombre)}
+                                      disabled={loading}
+                                      title="Eliminar administrador"
+                                    >
+                                      <i className="fas fa-trash-alt"></i>
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}

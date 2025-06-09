@@ -14,9 +14,10 @@ export default function Login() {
   const { login } = useAuth();
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -169,6 +170,14 @@ export default function Login() {
                     disabled={loading}
                   />
                 </div>
+                
+                <div className="mb-3">
+                  <div className="alert alert-info">
+                    <i className="fas fa-info-circle me-2"></i>
+                    <small>Las sesiones se mantienen automáticamente guardadas en el navegador</small>
+                  </div>
+                </div>
+                
                 <button type="submit" className="btn btn-success w-100" disabled={loading}>
                   {loading ? (
                     <>

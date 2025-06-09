@@ -1,6 +1,6 @@
 // Importar Firebase v9 con sintaxis de módulos
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, browserSessionPersistence, setPersistence } from 'firebase/auth';
+import { getAuth, browserSessionPersistence, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Configuración de Firebase usando variables de entorno
@@ -39,22 +39,28 @@ const db = getFirestore(app);
 // Esto permite registrar usuarios sin afectar la sesión actual del usuario
 const secondaryAuth = getAuth(app);
 
-// Configurar Firebase para usar sesiones no persistentes (solo en memoria)
-// Esto hace que la sesión se cierre cuando se cierra la pestaña o el navegador
-setPersistence(auth, browserSessionPersistence)
-  .then(() => {
-    console.log('Firebase configurado para usar sesiones no persistentes');
-  })
-  .catch((error) => {
+/**
+ * Configura la persistencia de Firebase Auth para usar siempre localStorage
+ * Según requerimientos del proyecto, debe usar localStorage únicamente
+ */
+export const configurarPersistencia = async () => {
+  try {
+    // Siempre usar localStorage según requerimientos del profesor
+    await setPersistence(auth, browserLocalPersistence);
+    
+    console.log('Firebase configurado para usar localStorage exclusivamente');
+    return true;
+  } catch (error) {
     console.error('Error al configurar persistencia:', error);
-  });
+    throw error;
+  }
+};
 
-// Configurar evento para limpiar el almacenamiento local al cerrar la página
-window.addEventListener('beforeunload', () => {
-  // Limpiar datos de sesión almacenados localmente
-  localStorage.removeItem('firebase:authUser');
-  sessionStorage.removeItem('firebase:authUser');
-});
+// Configurar persistencia inicial para usar siempre localStorage
+configurarPersistencia();
+
+// Limpiar sessionStorage al cargar (en caso de datos anteriores)
+sessionStorage.removeItem('firebase:authUser');
 
 // Mensaje de confirmación
 console.log('Firebase inicializado con proyecto:', firebaseConfig.projectId);

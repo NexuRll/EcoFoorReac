@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import CerrarSesion from '../context/CerrarSesion';
 
+
 const Perfil = () => {
   const { currentUser, logout, userType, userData } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -359,6 +360,16 @@ const Perfil = () => {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Componente de configuración de sesión */}
+                  <div className="row mb-4">
+                    <div className="col-12">
+                      <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Persistencia de sesión:</strong> Las sesiones se guardan automáticamente en localStorage según los requerimientos del proyecto.
+              </div>
+                    </div>
+                  </div>
                   
                   <div className="d-grid gap-2 mt-4">
                     <CerrarSesion />

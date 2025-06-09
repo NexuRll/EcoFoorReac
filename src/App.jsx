@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import HomeAuth from './pages/HomeAuth';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RecuperarContrasena from './pages/RecuperarContrasena';
 import Perfil from './pages/Perfil';
 import AuthWrapper from './components/AuthWrapper';
 import Navbar from './components/Navbar';
@@ -63,6 +64,7 @@ const AppContent = () => {
             <Route path="/" element={currentUser ? <HomeAuth /> : <Home />} />
             <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
             <Route path="/register" element={!currentUser ? <Register /> : <Navigate to="/" />} />
+            <Route path="/recuperar-contrasena" element={!currentUser ? <RecuperarContrasena /> : <Navigate to="/" />} />
             <Route path="/perfil" element={currentUser ? <Perfil /> : <Navigate to="/login" />} />
             <Route path="/catalogo" element={currentUser ? <HomeAuth /> : <Navigate to="/login" />} />
             

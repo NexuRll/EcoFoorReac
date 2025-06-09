@@ -156,6 +156,19 @@ export const validarDireccion = (direccion) => {
 };
 
 /**
+ * Valida un campo de país
+ * @param {string} pais - País a validar
+ * @returns {string|null} - Mensaje de error o null si es válido
+ */
+export const validarPais = (pais) => {
+  if (!pais || pais.trim() === '') {
+    return 'País es requerido';
+  }
+  
+  return null;
+};
+
+/**
  * Valida un campo de comuna
  * @param {string} comuna - Comuna a validar
  * @returns {string|null} - Mensaje de error o null si es válido
@@ -175,9 +188,7 @@ export const validarComuna = (comuna) => {
     return `Comuna no puede exceder ${LIMITES.COMUNA.max} caracteres`;
   }
   
-  if (!REGEX.SOLO_LETRAS.test(comunaLimpia)) {
-    return 'Comuna solo puede contener letras y espacios';
-  }
+  // Nota: Removemos la validación SOLO_LETRAS porque las comunas pueden tener números y otros caracteres
   
   return null;
 };
@@ -228,9 +239,10 @@ export const validarFormularioAdmin = (datos) => {
 /**
  * Valida todos los campos de un formulario de cliente
  * @param {Object} datos - Datos del formulario
+ * @param {boolean} requierePassword - Si se requiere validar contraseña (default: true)
  * @returns {Object} - Objeto con errores por campo
  */
-export const validarFormularioCliente = (datos) => {
+export const validarFormularioCliente = (datos, requierePassword = true) => {
   const errores = {};
   
   const errorNombre = validarNombre(datos.nombre, 'Nombre');
@@ -239,14 +251,20 @@ export const validarFormularioCliente = (datos) => {
   const errorEmail = validarEmail(datos.correo);
   if (errorEmail) errores.correo = errorEmail;
   
-  const errorPassword = validarPassword(datos.password);
-  if (errorPassword) errores.password = errorPassword;
+  // Solo validar contraseña si se requiere (para creación, no para edición)
+  if (requierePassword) {
+    const errorPassword = validarPassword(datos.password);
+    if (errorPassword) errores.password = errorPassword;
+  }
   
-  const errorDireccion = validarDireccion(datos.direccion);
-  if (errorDireccion) errores.direccion = errorDireccion;
+  const errorPais = validarPais(datos.pais);
+  if (errorPais) errores.pais = errorPais;
   
   const errorComuna = validarComuna(datos.comuna);
   if (errorComuna) errores.comuna = errorComuna;
+  
+  const errorDireccion = validarDireccion(datos.direccion);
+  if (errorDireccion) errores.direccion = errorDireccion;
   
   const errorTelefono = validarTelefono(datos.telefono);
   if (errorTelefono) errores.telefono = errorTelefono;
@@ -257,9 +275,10 @@ export const validarFormularioCliente = (datos) => {
 /**
  * Valida todos los campos de un formulario de empresa
  * @param {Object} datos - Datos del formulario
+ * @param {boolean} requierePassword - Si se requiere validar contraseña (default: true)
  * @returns {Object} - Objeto con errores por campo
  */
-export const validarFormularioEmpresa = (datos) => {
+export const validarFormularioEmpresa = (datos, requierePassword = true) => {
   const errores = {};
   
   const errorNombre = validarNombre(datos.nombre, 'Nombre de empresa');
@@ -268,17 +287,23 @@ export const validarFormularioEmpresa = (datos) => {
   const errorEmail = validarEmail(datos.email);
   if (errorEmail) errores.email = errorEmail;
   
-  const errorPassword = validarPassword(datos.password);
-  if (errorPassword) errores.password = errorPassword;
+  // Solo validar contraseña si se requiere (para creación, no para edición)
+  if (requierePassword) {
+    const errorPassword = validarPassword(datos.password);
+    if (errorPassword) errores.password = errorPassword;
+  }
   
   const errorRut = validarRut(datos.rut);
   if (errorRut) errores.rut = errorRut;
   
-  const errorDireccion = validarDireccion(datos.direccion);
-  if (errorDireccion) errores.direccion = errorDireccion;
+  const errorPais = validarPais(datos.pais);
+  if (errorPais) errores.pais = errorPais;
   
   const errorComuna = validarComuna(datos.comuna);
   if (errorComuna) errores.comuna = errorComuna;
+  
+  const errorDireccion = validarDireccion(datos.direccion);
+  if (errorDireccion) errores.direccion = errorDireccion;
   
   const errorTelefono = validarTelefono(datos.telefono);
   if (errorTelefono) errores.telefono = errorTelefono;

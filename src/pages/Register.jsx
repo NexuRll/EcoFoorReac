@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
+import { validarEmailUnicoConDebounce } from '../services/validacionesUnicas';
+import SelectorPaisComunaAPI from '../components/SelectorPaisComunaAPI';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,13 +13,22 @@ const Register = () => {
     nombre: '',
     correo: '',
     contraseña: '',
-    direccion: '',
+    pais: '',
     comuna: '',
+    direccion: '',
     telefono: '',
     tipoUsuario: 'cliente',
   });
 
   const [errores, setErrores] = useState({});
+
+  // Estado para validación única de email
+  const [validacionEmail, setValidacionEmail] = useState({
+    validando: false,
+    esUnico: null,
+    mensaje: null,
+    error: null
+  });
 
   const validarContraseña = (contraseña) => {
     const tieneLongitud = contraseña.length >= 6;
@@ -32,6 +43,13 @@ const Register = () => {
       ...formData,
       [name]: value,
     });
+
+    // Validación en tiempo real para email único
+    if (name === 'correo' && value.length >= 5) {
+      validarEmailUnicoConDebounce(value, null, setValidacionEmail);
+    } else if (name === 'correo') {
+      setValidacionEmail({ validando: false, esUnico: null, mensaje: null, error: null });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -45,8 +63,14 @@ const Register = () => {
     } else if (!validarContraseña(formData.contraseña)) {
       nuevosErrores.contraseña = 'Debe tener al menos 6 caracteres, letras y numeros';
     }
-    if (!formData.direccion) nuevosErrores.direccion = 'La dirección es obligatoria';
+    if (!formData.pais) nuevosErrores.pais = 'El país es obligatorio';
     if (!formData.comuna) nuevosErrores.comuna = 'La comuna es obligatoria';
+    if (!formData.direccion) nuevosErrores.direccion = 'La dirección es obligatoria';
+    
+    // Agregar error de email único si es necesario
+    if (validacionEmail.esUnico === false) {
+      nuevosErrores.correo = validacionEmail.mensaje;
+    }
 
     setErrores(nuevosErrores);
 
@@ -118,14 +142,50 @@ const Register = () => {
 
                 <div className="mb-3">
                   <label className="form-label">Correo electrónico</label>
-                  <input 
-                    type="email" 
-                    className="form-control" 
-                    name="correo" 
-                    value={formData.correo} 
-                    onChange={handleChange} 
-                  />
+                  <div className="position-relative">
+                    <input 
+                      type="email" 
+                      className={`form-control ${
+                        errores.correo ? 'is-invalid' : 
+                        validacionEmail.esUnico === false ? 'is-invalid' :
+                        validacionEmail.esUnico === true ? 'is-valid' : ''
+                      }`}
+                      name="correo" 
+                      value={formData.correo} 
+                      onChange={handleChange} 
+                      disabled={loading}
+                    />
+                    {validacionEmail.validando && (
+                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <div className="spinner-border spinner-border-sm text-primary" role="status">
+                          <span className="visually-hidden">Verificando...</span>
+                        </div>
+                      </div>
+                    )}
+                    {validacionEmail.esUnico === true && !validacionEmail.validando && (
+                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i className="fas fa-check-circle text-success"></i>
+                      </div>
+                    )}
+                    {validacionEmail.esUnico === false && !validacionEmail.validando && (
+                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i className="fas fa-times-circle text-danger"></i>
+                      </div>
+                    )}
+                  </div>
                   {errores.correo && <p className="text-danger">{errores.correo}</p>}
+                  {!errores.correo && validacionEmail.mensaje && (
+                    <div className={`small mt-1 ${
+                      validacionEmail.esUnico === false ? 'text-danger' : 
+                      validacionEmail.esUnico === true ? 'text-success' : 'text-info'
+                    }`}>
+                      <i className={`fas ${
+                        validacionEmail.esUnico === false ? 'fa-exclamation-triangle' :
+                        validacionEmail.esUnico === true ? 'fa-check' : 'fa-info-circle'
+                      } me-1`}></i>
+                      {validacionEmail.mensaje}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-3">
@@ -140,6 +200,16 @@ const Register = () => {
                   {errores.contraseña && <p className="text-danger">{errores.contraseña}</p>}
                 </div>
 
+                {/* Selector de País y Comuna con APIs */}
+                <SelectorPaisComunaAPI
+                  paisSeleccionado={formData.pais}
+                  comunaSeleccionada={formData.comuna}
+                  onPaisChange={(pais) => setFormData({ ...formData, pais })}
+                  onComunaChange={(comuna) => setFormData({ ...formData, comuna })}
+                  errores={errores}
+                  disabled={loading}
+                />
+
                 <div className="mb-3">
                   <label className="form-label">Dirección</label>
                   <input 
@@ -147,21 +217,15 @@ const Register = () => {
                     className="form-control" 
                     name="direccion" 
                     value={formData.direccion} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
+                    placeholder="Ej: Calle 123 #45-67, Apartamento 8B"
+                    disabled={loading}
                   />
                   {errores.direccion && <p className="text-danger">{errores.direccion}</p>}
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Comuna</label>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    name="comuna" 
-                    value={formData.comuna} 
-                    onChange={handleChange} 
-                  />
-                  {errores.comuna && <p className="text-danger">{errores.comuna}</p>}
+                  <div className="form-text text-muted">
+                    <i className="fas fa-info-circle me-1"></i>
+                    Ingresa tu dirección completa (calle, número, apartamento, etc.)
+                  </div>
                 </div>
 
                 <div className="mb-3">

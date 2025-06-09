@@ -1,4 +1,4 @@
-import { auth, db } from './firebase';
+import { auth, db, configurarPersistencia } from './firebase';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -29,8 +29,9 @@ export const registerUser = async (userData) => {
     await setDoc(doc(db, 'usuarios', userCredential.user.uid), {
       nombre: userData.nombre,
       correo: userData.correo,
-      direccion: userData.direccion,
+      pais: userData.pais,
       comuna: userData.comuna,
+      direccion: userData.direccion,
       telefono: userData.telefono || '',
       tipoUsuario: userData.tipoUsuario || 'cliente',
       createdAt: new Date().toISOString(),
@@ -49,6 +50,8 @@ export const registerUser = async (userData) => {
 
 // Función para iniciar sesión (usuarios regulares, empresas o administradores)
 export const loginUser = async (email, password) => {
+  // Configurar persistencia antes del login (siempre localStorage)
+  await configurarPersistencia();
   try {
     // Primero intentar con Firebase Auth (usuarios, empresas y administradores con Auth)
     try {

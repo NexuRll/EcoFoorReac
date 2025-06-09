@@ -82,21 +82,9 @@ export const AuthProvider = ({ children }) => {
         console.log("=== Fin AuthContext - Estado actualizado ===");
       });
       
-      // Configurar el evento beforeunload para cerrar sesión cuando se cierra la página
-      const handleBeforeUnload = () => {
-        // Cerrar sesión cuando el usuario cierra la página
-        if (auth.currentUser) {
-          signOut(auth).catch(error => console.error("Error al cerrar sesión:", error));
-        }
-      };
-      
-      // Agregar el evento al window
-      window.addEventListener('beforeunload', handleBeforeUnload);
-
-      // Limpiar la suscripción y el evento cuando el componente se desmonte
+      // Limpiar la suscripción cuando el componente se desmonte
       return () => {
         unsubscribe();
-        window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     } catch (error) {
       console.error("Error al conectar con Firebase:", error);
