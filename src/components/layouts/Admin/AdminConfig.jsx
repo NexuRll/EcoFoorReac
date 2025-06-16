@@ -12,7 +12,7 @@ import {
 } from '../../../services/adminFirebase';
 import { validarFormularioAdmin, formatearInput, LIMITES } from '../../../utils/validaciones';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../../services/firebase';
+import { db } from '../../../services/core/firebase';
 import Swal from 'sweetalert2';
 
 const AdminConfig = () => {

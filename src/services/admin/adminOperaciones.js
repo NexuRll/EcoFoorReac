@@ -8,7 +8,7 @@ import {
   deleteDoc, 
   addDoc 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../core/firebase';
 import { COLECCION_ADMIN, esAdminPrincipal } from './adminPrincipal';
 
 /**

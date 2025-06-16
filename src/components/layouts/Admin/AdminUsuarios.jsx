@@ -3,7 +3,7 @@ import { registrarClienteConAuth } from '../../../services/clienteFirebase';
 import { obtenerUsuarios, eliminarUsuario, actualizarUsuario, obtenerUsuarioPorId } from '../../../services/admin/usuariosOperaciones';
 import { validarFormularioCliente, formatearInput, LIMITES } from '../../../utils/validaciones';
 import { validarEmailUnicoConDebounce } from '../../../services/validacionesUnicas';
-import SelectorPaisComunaAPI from '../../SelectorPaisComunaAPI';
+import SelectorPaisComunaAPI from '../../common/SelectorPaisComunaAPI';
 import Swal from 'sweetalert2';
 
 const AdminUsuarios = () => {

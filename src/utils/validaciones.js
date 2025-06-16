@@ -296,17 +296,27 @@ export const validarFormularioEmpresa = (datos, requierePassword = true) => {
   const errorRut = validarRut(datos.rut);
   if (errorRut) errores.rut = errorRut;
   
-  const errorPais = validarPais(datos.pais);
-  if (errorPais) errores.pais = errorPais;
+  // Para empresas, país no es requerido
+  // const errorPais = validarPais(datos.pais);
+  // if (errorPais) errores.pais = errorPais;
   
-  const errorComuna = validarComuna(datos.comuna);
-  if (errorComuna) errores.comuna = errorComuna;
+  // Comuna es opcional para empresas
+  if (datos.comuna && datos.comuna.trim()) {
+    const errorComuna = validarComuna(datos.comuna);
+    if (errorComuna) errores.comuna = errorComuna;
+  }
   
-  const errorDireccion = validarDireccion(datos.direccion);
-  if (errorDireccion) errores.direccion = errorDireccion;
+  // Dirección es opcional para empresas
+  if (datos.direccion && datos.direccion.trim()) {
+    const errorDireccion = validarDireccion(datos.direccion);
+    if (errorDireccion) errores.direccion = errorDireccion;
+  }
   
-  const errorTelefono = validarTelefono(datos.telefono);
-  if (errorTelefono) errores.telefono = errorTelefono;
+  // Teléfono es opcional para empresas
+  if (datos.telefono && datos.telefono.trim()) {
+    const errorTelefono = validarTelefono(datos.telefono);
+    if (errorTelefono) errores.telefono = errorTelefono;
+  }
   
   return errores;
 };

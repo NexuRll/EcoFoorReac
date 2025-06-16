@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { auth, db } from "../services/firebase";
+import { auth, db } from "../services/core/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { subscribeToAuthChanges, loginUser, logoutUser, registerUser } from "../services/authService";
+import { subscribeToAuthChanges, loginUser, logoutUser, registerUser } from "../services/auth/authService";
 
 export const AuthContext = createContext();
 
@@ -158,6 +158,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Función para actualizar los datos del usuario en el contexto
+  const updateUserData = (newData) => {
+    setUserData(prevData => ({
+      ...prevData,
+      ...newData
+    }));
+  };
+
   const value = {
     currentUser,
     userData,
@@ -166,7 +174,8 @@ export const AuthProvider = ({ children }) => {
     error,
     signup,
     login,
-    logout
+    logout,
+    updateUserData
   };
 
   return (

@@ -1,20 +1,22 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
-import HomeAuth from './pages/HomeAuth';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import RecuperarContrasena from './pages/RecuperarContrasena';
-import Perfil from './pages/Perfil';
-import AuthWrapper from './components/AuthWrapper';
-import Navbar from './components/Navbar';
+import Home from './pages/common/Home';
+import HomeAuth from './pages/common/HomeAuth';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import RecuperarContrasena from './pages/auth/RecuperarContrasena';
+import Perfil from './pages/common/Perfil';
 import { useAuth } from './context/AuthContext';
 import AdminLayout from './components/layouts/Admin/AdminLayout';
+import EmpresaLayout from './components/layouts/Empresa/EmpresaLayout';
 import ProtectedByRole from './routes/ProtectedByRole';
-import AdminUsuarios from './components/layouts/Admin/AdminUsuarios';
-import AdminConfig from './components/layouts/Admin/AdminConfig';
-import AdminEmpresas from './pages/empresas/AdminEmpresas';
+import ConfigPage from './pages/admin/ConfigPage';
+import AdminEmpresas from './pages/admin/AdminEmpresas';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UsuariosPage from './pages/admin/UsuariosPage';
+import EmpresaDashboard from './pages/empresa/EmpresaDashboard';
+import PerfilEmpresa from './pages/empresa/PerfilEmpresa';
+import ProductosEmpresa from './pages/empresa/ProductosEmpresa';
 
 // Componente temporal de prueba para admin
 const AdminTest = () => {
@@ -47,8 +49,7 @@ const AppContent = () => {
   
   return (
     <div className="container-fluid p-0">
-      {/* No mostramos Navbar en rutas de administración */}
-      {!window.location.pathname.startsWith('/admin') && <Navbar />}
+      {/* Navbar eliminado - ahora cada layout maneja su propia navegación */}
 
       <div className="container mt-4">
         {loading ? (
@@ -82,8 +83,21 @@ const AppContent = () => {
               <Route index element={<Navigate to="/admin/dashboard" />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="empresas" element={<AdminEmpresas />} />
-              <Route path="clientes" element={<AdminUsuarios />} />
-              <Route path="administradores" element={<AdminConfig />} />
+              <Route path="clientes" element={<UsuariosPage />} />
+              <Route path="usuarios" element={<Navigate to="/admin/clientes" replace />} />
+              <Route path="administradores" element={<ConfigPage />} />
+            </Route>
+            
+            {/* Rutas de empresa protegidas */}
+            <Route path="/empresa" element={
+              <ProtectedByRole allowed={['empresa']}>
+                <EmpresaLayout />
+              </ProtectedByRole>
+            }>
+              <Route index element={<Navigate to="/empresa/dashboard" />} />
+              <Route path="dashboard" element={<EmpresaDashboard />} />
+              <Route path="perfil" element={<PerfilEmpresa />} />
+              <Route path="productos" element={<ProductosEmpresa />} />
             </Route>
             
             {/* Ruta por defecto */}
@@ -98,9 +112,8 @@ const AppContent = () => {
 function App() {
   return (
     <BrowserRouter>
-      <AuthWrapper>
-        <AppContent />
-      </AuthWrapper>
+      {/* AuthWrapper eliminado - funcionalidad movida al contexto */}
+      <AppContent />
     </BrowserRouter>
   );
 }

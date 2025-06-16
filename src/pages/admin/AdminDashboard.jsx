@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { obtenerAdministradores, existeAdminPrincipal, ADMIN_PRINCIPAL_UID, COLECCION_ADMIN } from '../../services/admin';
 import { obtenerUsuarios } from '../../services/admin/usuariosOperaciones';
 import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { db } from '../../services/core/firebase';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 

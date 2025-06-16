@@ -1,5 +1,5 @@
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../core/firebase';
 
 // ID del administrador principal que no se puede eliminar
 export const ADMIN_PRINCIPAL_UID = "fAfWKq9gSMX1SFTAr3zeb0RYY903";

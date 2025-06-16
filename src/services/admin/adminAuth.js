@@ -1,5 +1,5 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../core/firebase';
 import { COLECCION_ADMIN } from './adminPrincipal';
 
 /**
