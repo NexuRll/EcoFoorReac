@@ -1,0 +1,31 @@
+.quick-actions {
+  padding: 20px;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.action-card {
+  background-color: #2d6a4f;
+  color: white;
+  text-decoration: none;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: background 0.2s ease-in-out;
+}
+
+.action-card:hover {
+  background-color: #40916c;
+}
+
+.action-card span {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
