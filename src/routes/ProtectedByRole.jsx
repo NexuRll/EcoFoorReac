@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedByRole({ allowed, children }) {
-  const { userData, loading, userType } = useAuth();
+  const { currentUser, loading, userType } = useAuth();
   
   // Debug logs desactivados para producción
   // console.log('=== PROTECTED BY ROLE DEBUG ===');
@@ -27,10 +27,8 @@ export default function ProtectedByRole({ allowed, children }) {
     );
   }
   
-  // Verificar tanto userData.tipo como userType por compatibilidad
-  const tipoUsuario = userData?.tipo || userType;
-  
-  if (!userData || !allowed.includes(tipoUsuario)) {
+  // Verificar si el usuario está autenticado y tiene el tipo correcto
+  if (!currentUser || !userType || !allowed.includes(userType)) {
     // console.log('ACCESO DENEGADO - Redirigiendo al login');
     // console.log('Razón: userData existe?', !!userData, '| tipo válido?', allowed.includes(tipoUsuario));
     return <Navigate to="/login" replace />;

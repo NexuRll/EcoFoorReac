@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { actualizarPerfilUsuario } from '../../services/auth/authService';
 import { validarEmailUnicoConDebounce } from '../../services/shared/validacionesUnicas';
+import { validarNombre, validarEmail, validarDireccion, validarTelefono } from '../../utils/validaciones';
 import SelectorPaisComunaAPI from '../../components/common/SelectorPaisComunaAPI';
 import Swal from 'sweetalert2';
 
@@ -27,6 +28,13 @@ const Perfil = () => {
     error: null
   });
 
+  // Límites de caracteres
+  const LIMITES = {
+    NOMBRE: { min: 2, max: 50 },
+    EMAIL: { max: 50 },
+    DIRECCION: { max: 50 }
+  };
+
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
     if (userData) {
@@ -43,9 +51,20 @@ const Perfil = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Aplicar límites de caracteres
+    let valorLimitado = value;
+    if (name === 'nombre' && value.length > LIMITES.NOMBRE.max) {
+      valorLimitado = value.substring(0, LIMITES.NOMBRE.max);
+    } else if (name === 'correo' && value.length > LIMITES.EMAIL.max) {
+      valorLimitado = value.substring(0, LIMITES.EMAIL.max);
+    } else if (name === 'direccion' && value.length > LIMITES.DIRECCION.max) {
+      valorLimitado = value.substring(0, LIMITES.DIRECCION.max);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: valorLimitado
     }));
 
     // Limpiar errores cuando el usuario empiece a escribir
@@ -57,36 +76,76 @@ const Perfil = () => {
     }
 
     // Validación en tiempo real para email único (solo si cambió)
-    if (name === 'correo' && value !== userData?.correo && value !== userData?.email && value.length >= 5) {
-      validarEmailUnicoConDebounce(value, userData?.uid, setValidacionEmail);
+    if (name === 'correo' && valorLimitado !== userData?.correo && valorLimitado !== userData?.email && valorLimitado.length >= 5) {
+      validarEmailUnicoConDebounce(valorLimitado, userData?.uid, setValidacionEmail);
     } else if (name === 'correo') {
       setValidacionEmail({ validando: false, esUnico: null, mensaje: null, error: null });
+    }
+  };
+
+  // Handlers para SelectorPaisComunaAPI
+  const handlePaisChange = (pais) => {
+    setFormData(prev => ({
+      ...prev,
+      pais: pais,
+      comuna: '' // Limpiar comuna cuando cambia el país
+    }));
+    
+    if (errores.pais) {
+      setErrores(prev => ({ ...prev, pais: null }));
+    }
+  };
+
+  const handleComunaChange = (comuna) => {
+    setFormData(prev => ({
+      ...prev,
+      comuna: comuna
+    }));
+    
+    if (errores.comuna) {
+      setErrores(prev => ({ ...prev, comuna: null }));
     }
   };
 
   const validarFormulario = () => {
     const nuevosErrores = {};
 
-    if (!formData.nombre.trim()) {
-      nuevosErrores.nombre = 'El nombre es obligatorio';
+    // Validar nombre con límites de caracteres
+    const errorNombre = validarNombre(formData.nombre, 'Nombre');
+    if (errorNombre) nuevosErrores.nombre = errorNombre;
+
+    // Validar email con límite de caracteres
+    const errorEmail = validarEmail(formData.correo);
+    if (errorEmail) nuevosErrores.correo = errorEmail;
+    
+    // Validar que el email no exceda el límite
+    if (formData.correo.length > LIMITES.EMAIL.max) {
+      nuevosErrores.correo = `El correo no puede exceder ${LIMITES.EMAIL.max} caracteres`;
     }
 
-    if (!formData.correo.trim()) {
-      nuevosErrores.correo = 'El correo es obligatorio';
-    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
-      nuevosErrores.correo = 'El formato del correo no es válido';
-    }
-
+    // Validar país
     if (!formData.pais.trim()) {
       nuevosErrores.pais = 'El país es obligatorio';
     }
 
+    // Validar comuna
     if (!formData.comuna.trim()) {
       nuevosErrores.comuna = 'La comuna es obligatoria';
     }
 
-    if (!formData.direccion.trim()) {
-      nuevosErrores.direccion = 'La dirección es obligatoria';
+    // Validar dirección con límite de caracteres
+    const errorDireccion = validarDireccion(formData.direccion);
+    if (errorDireccion) nuevosErrores.direccion = errorDireccion;
+    
+    // Validar que la dirección no exceda el límite
+    if (formData.direccion.length > LIMITES.DIRECCION.max) {
+      nuevosErrores.direccion = `La dirección no puede exceder ${LIMITES.DIRECCION.max} caracteres`;
+    }
+
+    // Validar teléfono (opcional pero con formato correcto si se proporciona)
+    if (formData.telefono.trim()) {
+      const errorTelefono = validarTelefono(formData.telefono);
+      if (errorTelefono) nuevosErrores.telefono = errorTelefono;
     }
 
     // Validar email único si cambió
@@ -266,22 +325,37 @@ const Perfil = () => {
                 <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Nombre completo *</label>
+                      <label className="form-label">
+                        Nombre completo *
+                        <small className="text-muted ms-2">
+                          (máximo {LIMITES.NOMBRE.max} caracteres)
+                        </small>
+                      </label>
                       <input
                         type="text"
                         className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
                         name="nombre"
                         value={formData.nombre}
                         onChange={handleChange}
+                        maxLength={LIMITES.NOMBRE.max}
+                        placeholder="Tu nombre completo"
                         disabled={loading}
                       />
                       {errores.nombre && (
                         <div className="invalid-feedback">{errores.nombre}</div>
                       )}
+                      <small className="text-muted">
+                        {formData.nombre.length}/{LIMITES.NOMBRE.max} caracteres
+                      </small>
                     </div>
                     
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Correo electrónico *</label>
+                      <label className="form-label">
+                        Correo electrónico *
+                        <small className="text-muted ms-2">
+                          (máximo {LIMITES.EMAIL.max} caracteres)
+                        </small>
+                      </label>
                       <div className="position-relative">
                         <input
                           type="email"
@@ -293,6 +367,8 @@ const Perfil = () => {
                           name="correo"
                           value={formData.correo}
                           onChange={handleChange}
+                          maxLength={LIMITES.EMAIL.max}
+                          placeholder="tu@correo.com"
                           disabled={loading}
                         />
                         {validacionEmail.validando && (
@@ -328,41 +404,68 @@ const Perfil = () => {
                           {validacionEmail.mensaje}
                         </div>
                       )}
+                      <small className="text-muted">
+                        {formData.correo.length}/{LIMITES.EMAIL.max} caracteres
+                      </small>
                     </div>
                   </div>
 
-                  <SelectorPaisComunaAPI 
-                    formData={formData}
-                    setFormData={setFormData}
-                    errores={errores}
+                  <SelectorPaisComunaAPI
+                    paisSeleccionado={formData.pais}
+                    comunaSeleccionada={formData.comuna}
+                    onPaisChange={handlePaisChange}
+                    onComunaChange={handleComunaChange}
+                    errorPais={errores.pais}
+                    errorComuna={errores.comuna}
+                    disabled={loading}
                   />
 
                   <div className="row">
                     <div className="col-md-8 mb-3">
-                      <label className="form-label">Dirección *</label>
+                      <label className="form-label">
+                        Dirección *
+                        <small className="text-muted ms-2">
+                          (máximo {LIMITES.DIRECCION.max} caracteres)
+                        </small>
+                      </label>
                       <input
                         type="text"
                         className={`form-control ${errores.direccion ? 'is-invalid' : ''}`}
                         name="direccion"
                         value={formData.direccion}
                         onChange={handleChange}
+                        maxLength={LIMITES.DIRECCION.max}
+                        placeholder="Tu dirección completa"
                         disabled={loading}
                       />
                       {errores.direccion && (
                         <div className="invalid-feedback">{errores.direccion}</div>
                       )}
+                      <small className="text-muted">
+                        {formData.direccion.length}/{LIMITES.DIRECCION.max} caracteres
+                      </small>
                     </div>
                     
                     <div className="col-md-4 mb-3">
-                      <label className="form-label">Teléfono</label>
+                      <label className="form-label">
+                        Teléfono
+                        <small className="text-muted ms-2">(opcional)</small>
+                      </label>
                       <input
                         type="tel"
-                        className="form-control"
+                        className={`form-control ${errores.telefono ? 'is-invalid' : ''}`}
                         name="telefono"
                         value={formData.telefono}
                         onChange={handleChange}
+                        placeholder="+56 9 1234 5678"
                         disabled={loading}
                       />
+                      {errores.telefono && (
+                        <div className="invalid-feedback">{errores.telefono}</div>
+                      )}
+                      <small className="text-muted">
+                        Solo números, espacios, guiones y signo +
+                      </small>
                     </div>
                   </div>
 

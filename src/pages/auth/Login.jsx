@@ -2,7 +2,6 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from "sweetalert2";
 import { AuthContext } from '../../context/AuthContext';
-import { resendVerificationEmail } from "../../services/auth/authService";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -28,9 +27,6 @@ export default function Login() {
     try {
       const user = await login(formData.correo, formData.contraseña);
       
-      console.log('Usuario logueado:', user);
-      console.log('Tipo de usuario:', user?.tipo);
-      
       Swal.fire({
         icon: 'success',
         title: '¡Bienvenido!',
@@ -41,95 +37,27 @@ export default function Login() {
 
       // Redirigir según el tipo de usuario
       if (user?.tipo === 'admin') {
-        console.log('Redirigiendo a admin dashboard...');
         navigate('/admin/dashboard');
       } else if (user?.tipo === 'empresa') {
-        console.log('Redirigiendo a dashboard de empresa...');
-        navigate('/empresa/dashboard'); // Redirigir al dashboard específico de empresa
+        navigate('/empresa/dashboard');
       } else {
-        console.log('Redirigiendo a perfil de cliente...');
-        navigate('/perfil'); // Los clientes van al perfil común
+        navigate('/cliente/productos');
       }
     } catch (error) {
       console.error('Error en login:', error);
       
       let errorMessage = 'Error al iniciar sesión';
       
-      if (error.message === 'EMAIL_NOT_VERIFIED') {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Correo no verificado',
-          text: 'Por favor verifica tu correo electrónico antes de iniciar sesión.',
-          showCancelButton: true,
-          confirmButtonText: 'Reenviar correo',
-          cancelButtonText: 'Cancelar'
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            try {
-              // Implementar reenvío de correo de verificación
-              Swal.fire({
-                icon: 'info',
-                title: 'Correo reenviado',
-                text: 'Revisa tu bandeja de entrada'
-              });
-            } catch (resendError) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo reenviar el correo'
-              });
-            }
-          }
-        });
-        return;
-      }
-      
       if (error.message.includes('invalid-credential') || error.message.includes('user-not-found')) {
         errorMessage = 'Correo o contraseña incorrectos';
       } else if (error.message.includes('too-many-requests')) {
         errorMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
-      } else {
-        errorMessage = error.message || 'Error desconocido';
       }
       
       Swal.fire({
         icon: 'error',
         title: 'Error de autenticación',
         text: errorMessage
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Función para prueba rápida de admin
-  const testAdminLogin = async () => {
-    setLoading(true);
-    try {
-      // Usar credenciales de prueba (puedes cambiar estos valores)
-      const testCredentials = {
-        correo: 'admin@ecofood.com',
-        contraseña: 'admin123'
-      };
-      
-      const user = await login(testCredentials.correo, testCredentials.contraseña);
-      console.log('Test admin login result:', user);
-      
-      if (user?.tipo === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        Swal.fire({
-          icon: 'info',
-          title: 'Usuario de prueba',
-          text: `Tipo de usuario: ${user?.tipo || 'desconocido'}`
-        });
-      }
-    } catch (error) {
-      console.error('Error en test admin:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error de prueba',
-        text: `No se pudo hacer login de prueba: ${error.message}`
       });
     } finally {
       setLoading(false);
@@ -171,13 +99,6 @@ export default function Login() {
                   />
                 </div>
                 
-                <div className="mb-3">
-                  <div className="alert alert-info">
-                    <i className="fas fa-info-circle me-2"></i>
-                    <small>Las sesiones se mantienen automáticamente guardadas en el navegador</small>
-                  </div>
-                </div>
-                
                 <button type="submit" className="btn btn-success w-100" disabled={loading}>
                   {loading ? (
                     <>
@@ -190,15 +111,6 @@ export default function Login() {
                     </>
                   )}
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-warning w-100 mb-3"
-                  onClick={testAdminLogin}
-                  disabled={loading}
-                >
-                  <i className="fas fa-cog me-2"></i>
-                  Probar Login Admin
-                </button>
               </form>
               
               <div className="text-center mt-3">
@@ -208,8 +120,8 @@ export default function Login() {
               </div>
               
               <div className="text-center mt-2">
-                <Link to="/recuperar-contrasena" className="text-decoration-none">
-                  ¿Olvidaste tu contraseña?
+                <Link to="/" className="text-decoration-none">
+                  Volver al inicio
                 </Link>
               </div>
             </div>

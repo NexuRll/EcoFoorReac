@@ -4,6 +4,7 @@ import EmpresaInfo from '../../components/empresa/perfil/EmpresaInfo';
 import LoadingSpinner from '../../components/common/ui/LoadingSpinner';
 import InputField from '../../components/common/forms/InputField';
 import SelectField from '../../components/common/forms/SelectField';
+import SelectorPaisComunaAPI from '../../components/common/SelectorPaisComunaAPI';
 import { empresaService } from '../../services/empresa/empresaFirebase';
 import Swal from 'sweetalert2';
 
@@ -21,36 +22,42 @@ const PerfilEmpresa = () => {
     direccion: '',
     pais: '',
     comuna: '',
-    descripcion: '',
-    sitioWeb: '',
-    redesSociales: {
-      facebook: '',
-      instagram: '',
-      twitter: ''
-    }
+    descripcion: ''
   });
   const [errors, setErrors] = useState({});
 
-  // Opciones para selectores
-  const paisesOptions = [
-    { value: 'Chile', label: 'Chile' },
-    { value: 'Argentina', label: 'Argentina' },
-    { value: 'Perú', label: 'Perú' },
-    { value: 'Colombia', label: 'Colombia' }
-  ];
+  // Funciones para manejar cambios del selector de país y comuna
+  const handlePaisChange = (pais) => {
+    setFormData(prev => ({
+      ...prev,
+      pais: pais,
+      comuna: '' // Limpiar comuna al cambiar país
+    }));
 
-  const comunasChileOptions = [
-    { value: 'Santiago', label: 'Santiago' },
-    { value: 'Valparaíso', label: 'Valparaíso' },
-    { value: 'Concepción', label: 'Concepción' },
-    { value: 'La Serena', label: 'La Serena' },
-    { value: 'Antofagasta', label: 'Antofagasta' },
-    { value: 'Temuco', label: 'Temuco' },
-    { value: 'Rancagua', label: 'Rancagua' },
-    { value: 'Talca', label: 'Talca' },
-    { value: 'Arica', label: 'Arica' },
-    { value: 'Chillán', label: 'Chillán' }
-  ];
+    // Limpiar errores
+    if (errors.pais) {
+      setErrors(prev => ({
+        ...prev,
+        pais: '',
+        comuna: '' // También limpiar error de comuna
+      }));
+    }
+  };
+
+  const handleComunaChange = (comuna) => {
+    setFormData(prev => ({
+      ...prev,
+      comuna: comuna
+    }));
+
+    // Limpiar error de comuna
+    if (errors.comuna) {
+      setErrors(prev => ({
+        ...prev,
+        comuna: ''
+      }));
+    }
+  };
 
   // Cargar datos de la empresa
   const cargarDatosEmpresa = async () => {
@@ -66,13 +73,7 @@ const PerfilEmpresa = () => {
           direccion: userData.direccion || '',
           pais: userData.pais || 'Chile',
           comuna: userData.comuna || '',
-          descripcion: userData.descripcion || '',
-          sitioWeb: userData.sitioWeb || '',
-          redesSociales: {
-            facebook: userData.redesSociales?.facebook || '',
-            instagram: userData.redesSociales?.instagram || '',
-            twitter: userData.redesSociales?.twitter || ''
-          }
+          descripcion: userData.descripcion || ''
         });
       }
     } catch (error) {
@@ -96,14 +97,18 @@ const PerfilEmpresa = () => {
       newErrors.nombre = 'El nombre de la empresa es obligatorio';
     } else if (formData.nombre.trim().length < 3) {
       newErrors.nombre = 'El nombre debe tener al menos 3 caracteres';
+    } else if (formData.nombre.trim().length > 50) {
+      newErrors.nombre = 'El nombre no puede exceder 50 caracteres';
     }
 
-    if (formData.telefono && !/^\+?[\d\s\-\(\)]{8,15}$/.test(formData.telefono)) {
-      newErrors.telefono = 'Formato de teléfono inválido';
+    if (formData.telefono && !/^\+?[\d\s\-]{8,15}$/.test(formData.telefono)) {
+      newErrors.telefono = 'Formato de teléfono inválido (solo números, espacios, guiones y signo +)';
     }
 
     if (!formData.direccion.trim()) {
       newErrors.direccion = 'La dirección es obligatoria';
+    } else if (formData.direccion.trim().length > 100) {
+      newErrors.direccion = 'La dirección no puede exceder 100 caracteres';
     }
 
     if (!formData.pais) {
@@ -114,22 +119,6 @@ const PerfilEmpresa = () => {
       newErrors.comuna = 'Selecciona una comuna';
     }
 
-    if (formData.sitioWeb && !/^https?:\/\/.+\..+/.test(formData.sitioWeb)) {
-      newErrors.sitioWeb = 'URL del sitio web inválida (debe incluir http:// o https://)';
-    }
-
-    if (formData.redesSociales.facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+/.test(formData.redesSociales.facebook)) {
-      newErrors.facebook = 'URL de Facebook inválida';
-    }
-
-    if (formData.redesSociales.instagram && !/^https?:\/\/(www\.)?instagram\.com\/.+/.test(formData.redesSociales.instagram)) {
-      newErrors.instagram = 'URL de Instagram inválida';
-    }
-
-    if (formData.redesSociales.twitter && !/^https?:\/\/(www\.)?twitter\.com\/.+/.test(formData.redesSociales.twitter)) {
-      newErrors.twitter = 'URL de Twitter inválida';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -138,21 +127,10 @@ const PerfilEmpresa = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    if (name.startsWith('redesSociales.')) {
-      const socialField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        redesSociales: {
-          ...prev.redesSociales,
-          [socialField]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
 
     // Limpiar error del campo
     if (errors[name]) {
@@ -314,6 +292,8 @@ const PerfilEmpresa = () => {
                           required
                           icon="fas fa-building"
                           placeholder="Nombre de tu empresa"
+                          maxLength={50}
+                          helpText={`${formData.nombre.length}/50 caracteres`}
                         />
                       </div>
 
@@ -326,6 +306,7 @@ const PerfilEmpresa = () => {
                           error={errors.telefono}
                           icon="fas fa-phone"
                           placeholder="+56 9 1234 5678"
+                          helpText="Solo números, espacios, guiones y signo +"
                         />
                       </div>
 
@@ -340,33 +321,27 @@ const PerfilEmpresa = () => {
                           required
                           icon="fas fa-map-marker-alt"
                           placeholder="Dirección completa de la empresa"
+                          maxLength={100}
+                          helpText={`${formData.direccion.length}/100 caracteres`}
                         />
                       </div>
 
-                      <div className="col-md-6">
-                        <SelectField
-                          label="País"
-                          name="pais"
-                          value={formData.pais}
-                          onChange={handleChange}
-                          error={errors.pais}
-                          options={paisesOptions}
-                          required
-                          icon="fas fa-flag"
-                        />
-                      </div>
-
-                      <div className="col-md-6">
-                        <SelectField
-                          label="Comuna"
-                          name="comuna"
-                          value={formData.comuna}
-                          onChange={handleChange}
-                          error={errors.comuna}
-                          options={comunasChileOptions}
-                          required
-                          icon="fas fa-map"
-                        />
+                      {/* Selector de País y Comuna con API */}
+                      <div className="col-12">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <SelectorPaisComunaAPI
+                              paisSeleccionado={formData.pais}
+                              comunaSeleccionada={formData.comuna}
+                              onPaisChange={handlePaisChange}
+                              onComunaChange={handleComunaChange}
+                              errores={{ pais: errors.pais, comuna: errors.comuna }}
+                              disabled={saving}
+                              paisLabel="País"
+                              comunaLabel="Ciudad/Comuna"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       {/* Descripción */}
@@ -392,75 +367,6 @@ const PerfilEmpresa = () => {
                         </div>
                       </div>
 
-                      {/* Información web */}
-                      <div className="col-12">
-                        <h6 className="text-muted mb-3">
-                          <i className="fas fa-globe me-2"></i>
-                          Presencia Web (Opcional)
-                        </h6>
-                      </div>
-
-                      <div className="col-md-6">
-                        <InputField
-                          label="Sitio Web"
-                          name="sitioWeb"
-                          value={formData.sitioWeb}
-                          onChange={handleChange}
-                          error={errors.sitioWeb}
-                          icon="fas fa-globe"
-                          placeholder="https://www.tuempresa.com"
-                        />
-                      </div>
-
-                      <div className="col-md-6">
-                        <InputField
-                          label="Facebook"
-                          name="redesSociales.facebook"
-                          value={formData.redesSociales.facebook}
-                          onChange={handleChange}
-                          error={errors.facebook}
-                          icon="fab fa-facebook"
-                          placeholder="https://www.facebook.com/tuempresa"
-                        />
-                      </div>
-
-                      <div className="col-md-6">
-                        <InputField
-                          label="Instagram"
-                          name="redesSociales.instagram"
-                          value={formData.redesSociales.instagram}
-                          onChange={handleChange}
-                          error={errors.instagram}
-                          icon="fab fa-instagram"
-                          placeholder="https://www.instagram.com/tuempresa"
-                        />
-                      </div>
-
-                      <div className="col-md-6">
-                        <InputField
-                          label="Twitter"
-                          name="redesSociales.twitter"
-                          value={formData.redesSociales.twitter}
-                          onChange={handleChange}
-                          error={errors.twitter}
-                          icon="fab fa-twitter"
-                          placeholder="https://www.twitter.com/tuempresa"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Información importante */}
-                    <div className="alert alert-info mt-4">
-                      <h6 className="alert-heading">
-                        <i className="fas fa-info-circle me-2"></i>
-                        Información importante:
-                      </h6>
-                      <ul className="mb-0">
-                        <li>El <strong>email</strong> y <strong>RUT</strong> no se pueden modificar por seguridad</li>
-                        <li>Los campos marcados con <span className="text-danger">*</span> son obligatorios</li>
-                        <li>Las URLs de redes sociales deben incluir https://</li>
-                        <li>Esta información será visible para los clientes</li>
-                      </ul>
                     </div>
                   </form>
                 </div>

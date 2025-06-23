@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
-import { validarEmailUnicoConDebounce } from '../../services/shared/validacionesUnicas';
-import SelectorPaisComunaAPI from '../../components/common/SelectorPaisComunaAPI';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -22,21 +20,6 @@ const Register = () => {
 
   const [errores, setErrores] = useState({});
 
-  // Estado para validación única de email
-  const [validacionEmail, setValidacionEmail] = useState({
-    validando: false,
-    esUnico: null,
-    mensaje: null,
-    error: null
-  });
-
-  const validarContraseña = (contraseña) => {
-    const tieneLongitud = contraseña.length >= 6;
-    const tieneLetras = /[a-zA-Z]/.test(contraseña);
-    const tieneNumeros = /\d/.test(contraseña);
-    return tieneLongitud && tieneLetras && tieneNumeros;
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -44,11 +27,12 @@ const Register = () => {
       [name]: value,
     });
 
-    // Validación en tiempo real para email único
-    if (name === 'correo' && value.length >= 5) {
-      validarEmailUnicoConDebounce(value, null, setValidacionEmail);
-    } else if (name === 'correo') {
-      setValidacionEmail({ validando: false, esUnico: null, mensaje: null, error: null });
+    // Limpiar errores cuando el usuario empiece a escribir
+    if (errores[name]) {
+      setErrores(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
@@ -56,21 +40,12 @@ const Register = () => {
     e.preventDefault();
 
     const nuevosErrores = {};
-    if (!formData.nombre) nuevosErrores.nombre = 'El nombre es obligatorio';
-    if (!formData.correo) nuevosErrores.correo = 'El correo es obligatorio';
-    if (!formData.contraseña) {
-      nuevosErrores.contraseña = 'La contraseña es obligatoria';
-    } else if (!validarContraseña(formData.contraseña)) {
-      nuevosErrores.contraseña = 'Debe tener al menos 6 caracteres, letras y numeros';
-    }
-    if (!formData.pais) nuevosErrores.pais = 'El país es obligatorio';
-    if (!formData.comuna) nuevosErrores.comuna = 'La comuna es obligatoria';
-    if (!formData.direccion) nuevosErrores.direccion = 'La dirección es obligatoria';
     
-    // Agregar error de email único si es necesario
-    if (validacionEmail.esUnico === false) {
-      nuevosErrores.correo = validacionEmail.mensaje;
-    }
+    // Validaciones básicas
+    if (!formData.nombre.trim()) nuevosErrores.nombre = 'El nombre es obligatorio';
+    if (!formData.correo.trim()) nuevosErrores.correo = 'El correo es obligatorio';
+    if (!formData.contraseña) nuevosErrores.contraseña = 'La contraseña es obligatoria';
+    if (!formData.direccion.trim()) nuevosErrores.direccion = 'La dirección es obligatoria';
 
     setErrores(nuevosErrores);
 
@@ -81,12 +56,7 @@ const Register = () => {
         Swal.fire({
           icon: 'success',
           title: 'Registro exitoso',
-          html: `
-            <p>Tu cuenta ha sido creada correctamente.</p>
-            <p><strong>IMPORTANTE:</strong> Se ha enviado un correo de verificación a <b>${formData.correo}</b>.</p>
-            <p>Debes verificar tu correo electrónico antes de poder iniciar sesión.</p>
-            <p>Revisa tu bandeja de entrada y haz clic en el enlace de verificación.</p>
-          `,
+          text: 'Tu cuenta ha sido creada correctamente.',
           confirmButtonText: 'Entendido'
         }).then(() => {
           navigate('/login');
@@ -94,17 +64,14 @@ const Register = () => {
       } catch (error) {
         console.error('Error al registrar usuario:', error);
         
-        // Mensajes de error más amigables según el código de error de Firebase
         let errorMessage = 'Hubo un problema al crear tu cuenta. Intenta nuevamente.';
         
         if (error.code === 'auth/email-already-in-use') {
-          errorMessage = 'Este correo electrónico ya está registrado. Intenta iniciar sesión o usa otro correo.';
+          errorMessage = 'Este correo electrónico ya está registrado.';
         } else if (error.code === 'auth/invalid-email') {
           errorMessage = 'El formato del correo electrónico no es válido.';
         } else if (error.code === 'auth/weak-password') {
           errorMessage = 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres.';
-        } else if (error.code === 'auth/network-request-failed') {
-          errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
         }
         
         Swal.fire({
@@ -129,113 +96,104 @@ const Register = () => {
             <div className="card-body">
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label">Nombre completo</label>
+                  <label className="form-label">Nombre completo *</label>
                   <input 
                     type="text" 
-                    className="form-control" 
+                    className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
                     name="nombre" 
                     value={formData.nombre} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
+                    placeholder="Ingresa tu nombre completo"
+                    disabled={loading}
                   />
-                  {errores.nombre && <p className="text-danger">{errores.nombre}</p>}
+                  {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label">Correo electrónico</label>
-                  <div className="position-relative">
-                    <input 
-                      type="email" 
-                      className={`form-control ${
-                        errores.correo ? 'is-invalid' : 
-                        validacionEmail.esUnico === false ? 'is-invalid' :
-                        validacionEmail.esUnico === true ? 'is-valid' : ''
-                      }`}
-                      name="correo" 
-                      value={formData.correo} 
-                      onChange={handleChange} 
-                      disabled={loading}
-                    />
-                    {validacionEmail.validando && (
-                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
-                        <div className="spinner-border spinner-border-sm text-primary" role="status">
-                          <span className="visually-hidden">Verificando...</span>
-                        </div>
-                      </div>
-                    )}
-                    {validacionEmail.esUnico === true && !validacionEmail.validando && (
-                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
-                        <i className="fas fa-check-circle text-success"></i>
-                      </div>
-                    )}
-                    {validacionEmail.esUnico === false && !validacionEmail.validando && (
-                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
-                        <i className="fas fa-times-circle text-danger"></i>
-                      </div>
-                    )}
-                  </div>
-                  {errores.correo && <p className="text-danger">{errores.correo}</p>}
-                  {!errores.correo && validacionEmail.mensaje && (
-                    <div className={`small mt-1 ${
-                      validacionEmail.esUnico === false ? 'text-danger' : 
-                      validacionEmail.esUnico === true ? 'text-success' : 'text-info'
-                    }`}>
-                      <i className={`fas ${
-                        validacionEmail.esUnico === false ? 'fa-exclamation-triangle' :
-                        validacionEmail.esUnico === true ? 'fa-check' : 'fa-info-circle'
-                      } me-1`}></i>
-                      {validacionEmail.mensaje}
-                    </div>
-                  )}
+                  <label className="form-label">Correo electrónico *</label>
+                  <input 
+                    type="email" 
+                    className={`form-control ${errores.correo ? 'is-invalid' : ''}`}
+                    name="correo" 
+                    value={formData.correo} 
+                    onChange={handleChange}
+                    placeholder="ejemplo@correo.com"
+                    disabled={loading}
+                  />
+                  {errores.correo && <div className="invalid-feedback">{errores.correo}</div>}
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label">Contraseña</label>
+                  <label className="form-label">Contraseña *</label>
                   <input 
                     type="password" 
-                    className="form-control" 
+                    className={`form-control ${errores.contraseña ? 'is-invalid' : ''}`}
                     name="contraseña" 
                     value={formData.contraseña} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
+                    placeholder="Mínimo 6 caracteres"
+                    disabled={loading}
                   />
-                  {errores.contraseña && <p className="text-danger">{errores.contraseña}</p>}
-                  <div className="form-text">
-                    La contraseña debe tener al menos 6 caracteres, incluir letras y números.
-                  </div>
+                  {errores.contraseña && <div className="invalid-feedback">{errores.contraseña}</div>}
                 </div>
 
-                <SelectorPaisComunaAPI 
-                  formData={formData}
-                  setFormData={setFormData}
-                  errores={errores}
-                />
-
                 <div className="mb-3">
-                  <label className="form-label">Dirección</label>
+                  <label className="form-label">País</label>
                   <input 
                     type="text" 
-                    className="form-control" 
+                    className="form-control"
+                    name="pais" 
+                    value={formData.pais} 
+                    onChange={handleChange}
+                    placeholder="País"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Comuna/Ciudad</label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    name="comuna" 
+                    value={formData.comuna} 
+                    onChange={handleChange}
+                    placeholder="Comuna o ciudad"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Dirección *</label>
+                  <input 
+                    type="text" 
+                    className={`form-control ${errores.direccion ? 'is-invalid' : ''}`}
                     name="direccion" 
                     value={formData.direccion} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
+                    placeholder="Ingresa tu dirección completa"
+                    disabled={loading}
                   />
-                  {errores.direccion && <p className="text-danger">{errores.direccion}</p>}
+                  {errores.direccion && <div className="invalid-feedback">{errores.direccion}</div>}
                 </div>
 
                 <div className="mb-3">
                   <label className="form-label">Teléfono (opcional)</label>
                   <input 
                     type="tel" 
-                    className="form-control" 
+                    className="form-control"
                     name="telefono" 
                     value={formData.telefono} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
+                    placeholder="+56 9 1234 5678"
+                    disabled={loading}
                   />
                 </div>
 
                 <button 
                   type="submit" 
                   className="btn btn-success w-100" 
-                  disabled={loading || validacionEmail.validando || validacionEmail.esUnico === false}
+                  disabled={loading}
                 >
                   {loading ? (
                     <>
@@ -253,6 +211,12 @@ const Register = () => {
               <div className="text-center mt-3">
                 <Link to="/login" className="text-decoration-none">
                   ¿Ya tienes cuenta? Inicia sesión aquí
+                </Link>
+              </div>
+              
+              <div className="text-center mt-2">
+                <Link to="/" className="text-decoration-none">
+                  Volver al inicio
                 </Link>
               </div>
             </div>

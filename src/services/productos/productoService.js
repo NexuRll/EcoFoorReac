@@ -313,6 +313,64 @@ export const productoService = {
   },
 
   /**
+   * Obtener todos los productos disponibles de todas las empresas (para clientes)
+   * @param {Object} options - Opciones de filtrado
+   * @returns {Promise<Array>} Lista de productos disponibles
+   */
+  async obtenerProductosPublicos(options = {}) {
+    try {
+      const { busqueda = '', limite = 50 } = options;
+
+      // Obtener todos los productos sin filtro de empresa
+      let q = query(collection(db, COLLECTION_NAME));
+
+      // Aplicar límite si se especifica
+      if (limite) {
+        q = query(q, limit(limite));
+      }
+
+      const snapshot = await getDocs(q);
+      let productos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Actualizar estados automáticamente
+      productos = productos.map(producto => ({
+        ...producto,
+        estado: this.determinarEstado(producto)
+      }));
+
+      // Filtrar solo productos disponibles (no agotados, no vencidos)
+      productos = productos.filter(producto => 
+        producto.estado === PRODUCT_STATUS.DISPONIBLE || 
+        producto.estado === PRODUCT_STATUS.POR_VENCER
+      );
+
+      // Aplicar filtro de búsqueda si existe
+      if (busqueda) {
+        const busquedaLower = busqueda.toLowerCase();
+        productos = productos.filter(producto => 
+          producto.nombre.toLowerCase().includes(busquedaLower) ||
+          producto.descripcion?.toLowerCase().includes(busquedaLower)
+        );
+      }
+
+      // Ordenar por fecha de creación (más recientes primero)
+      productos.sort((a, b) => {
+        const fechaA = new Date(a.fechaCreacion || 0);
+        const fechaB = new Date(b.fechaCreacion || 0);
+        return fechaB - fechaA;
+      });
+
+      return productos;
+    } catch (error) {
+      console.error('Error obteniendo productos públicos:', error);
+      throw new Error('Error al obtener productos: ' + error.message);
+    }
+  },
+
+  /**
    * Buscar productos por texto
    * @param {string} empresaId - ID de la empresa
    * @param {string} textoBusqueda - Texto a buscar

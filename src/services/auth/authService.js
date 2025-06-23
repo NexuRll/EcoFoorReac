@@ -203,29 +203,8 @@ export const resetPassword = async (email) => {
   }
 };
 
-// Variable para almacenar el usuario actual (puede ser usuario de Firebase o empresa)
-let currentUser = null;
-
-// Función para establecer el usuario actual (para empresas)
-export const setCurrentUser = (user) => {
-  currentUser = user;
-};
-
 // Función para observar cambios en el estado de autenticación
 export const subscribeToAuthChanges = (callback) => {
-  // Observar cambios en Firebase Auth
-  return onAuthStateChanged(auth, (user) => {
-    // Si hay un usuario en Firebase Auth, usamos ese
-    if (user) {
-      currentUser = {
-        ...user,
-        tipo: 'usuario'
-      };
-    } else if (!currentUser || currentUser.tipo !== 'empresa') {
-      // Solo limpiar si no es una empresa (las empresas no usan Firebase Auth)
-      currentUser = null;
-    }
-    
-    callback(currentUser);
-  });
+  // Observar cambios en Firebase Auth directamente
+  return onAuthStateChanged(auth, callback);
 }; 
