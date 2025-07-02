@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+import { 
+  validarFormularioProducto,
+  formatearInputProducto,
+  obtenerContadorCaracteres 
+} from '../../utils/validaciones/productoValidaciones';
+import { PRODUCT_LIMITS } from '../../utils/constants/validationRules';
 
 const ProductoModal = ({ 
   isOpen, 
@@ -14,7 +20,7 @@ const ProductoModal = ({
     categoria: '',
     precio: '',
     cantidad: '',
-    fechaVencimiento: '',
+    vencimiento: '',
     estado: 'disponible',
     imagen: ''
   });
@@ -31,7 +37,7 @@ const ProductoModal = ({
         categoria: producto.categoria || '',
         precio: producto.precio || '',
         cantidad: producto.cantidad || '',
-        fechaVencimiento: producto.fechaVencimiento || '',
+        vencimiento: producto.vencimiento || '',
         estado: producto.estado || 'disponible',
         imagen: producto.imagen || ''
       });
@@ -43,7 +49,7 @@ const ProductoModal = ({
         categoria: '',
         precio: '',
         cantidad: '',
-        fechaVencimiento: '',
+        vencimiento: '',
         estado: 'disponible',
         imagen: ''
       });
@@ -53,6 +59,39 @@ const ProductoModal = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Formatear el valor según el tipo de campo
+    let valorFormateado = value;
+    
+    if (name === 'nombre') {
+      valorFormateado = formatearInputProducto(value, 'nombre');
+      // Aplicar límite de caracteres
+      if (valorFormateado.length > PRODUCT_LIMITS.NOMBRE.max) {
+        valorFormateado = valorFormateado.substring(0, PRODUCT_LIMITS.NOMBRE.max);
+      }
+    } else if (name === 'descripcion') {
+      valorFormateado = formatearInputProducto(value, 'descripcion');
+      // Aplicar límite de caracteres
+      if (valorFormateado.length > PRODUCT_LIMITS.DESCRIPCION.max) {
+        valorFormateado = valorFormateado.substring(0, PRODUCT_LIMITS.DESCRIPCION.max);
+      }
+    } else if (name === 'cantidad') {
+      valorFormateado = formatearInputProducto(value, 'cantidad');
+      // Verificar límite numérico
+      const cantidadNum = parseInt(valorFormateado);
+      if (!isNaN(cantidadNum) && cantidadNum > PRODUCT_LIMITS.CANTIDAD.max) {
+        valorFormateado = PRODUCT_LIMITS.CANTIDAD.max.toString();
+      }
+    } else if (name === 'precio') {
+      valorFormateado = formatearInputProducto(value, 'precio');
+      // Verificar límite numérico
+      const precioNum = parseFloat(valorFormateado);
+      if (!isNaN(precioNum) && precioNum > PRODUCT_LIMITS.PRECIO.max) {
+        valorFormateado = PRODUCT_LIMITS.PRECIO.max.toString();
+      }
+    } else if (name === 'imagen') {
+      valorFormateado = formatearInputProducto(value, 'imagen');
+    }
     
     // Lógica especial para cantidad cuando el estado es "agotado"
     if (name === 'estado' && value === 'agotado') {
@@ -64,7 +103,7 @@ const ProductoModal = ({
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: valorFormateado
       }));
     }
 
@@ -78,33 +117,9 @@ const ProductoModal = ({
   };
 
   const validarFormulario = () => {
-    const nuevosErrores = {};
-
-    if (!formData.nombre.trim()) {
-      nuevosErrores.nombre = 'El nombre es obligatorio';
-    }
-
-    if (!formData.categoria.trim()) {
-      nuevosErrores.categoria = 'La categoría es obligatoria';
-    }
-
-    if (!formData.precio || formData.precio < 0) {
-      nuevosErrores.precio = 'El precio debe ser mayor o igual a 0';
-    }
-
-    if (!formData.cantidad || formData.cantidad < 0) {
-      nuevosErrores.cantidad = 'La cantidad debe ser mayor o igual a 0';
-    }
-
-    if (formData.estado === 'agotado' && formData.cantidad !== '0') {
-      nuevosErrores.cantidad = 'La cantidad debe ser 0 cuando el producto está agotado';
-    }
-
-    if (!formData.fechaVencimiento) {
-      nuevosErrores.fechaVencimiento = 'La fecha de vencimiento es obligatoria';
-    }
-
-    return nuevosErrores;
+    // Usar el sistema de validación robusto
+    const erroresValidacion = validarFormularioProducto(formData);
+    return erroresValidacion;
   };
 
   const handleSubmit = async (e) => {
@@ -176,10 +191,28 @@ const ProductoModal = ({
                     name="nombre"
                     value={formData.nombre}
                     onChange={handleChange}
-                    placeholder="Ej: Manzanas Rojas"
+                    placeholder="Ej: Manzanas Rojas Orgánicas"
                     disabled={loading}
+                    maxLength={PRODUCT_LIMITS.NOMBRE.max}
                   />
                   {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
+                  {/* Contador de caracteres */}
+                  {(() => {
+                    const contador = obtenerContadorCaracteres(formData.nombre, 'nombre');
+                    if (contador) {
+                      return (
+                        <small className={`form-text ${
+                          contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
+                        }`}>
+                          {contador.actual}/{contador.limite} caracteres
+                          {contador.actual < PRODUCT_LIMITS.NOMBRE.min && 
+                            ` (mínimo ${PRODUCT_LIMITS.NOMBRE.min})`
+                          }
+                        </small>
+                      );
+                    }
+                    return null;
+                  })()} 
                 </div>
 
                 <div className="col-md-6 mb-3">
@@ -204,21 +237,40 @@ const ProductoModal = ({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Descripción</label>
+                <label className="form-label">Descripción *</label>
                 <textarea
-                  className="form-control"
+                  className={`form-control ${errores.descripcion ? 'is-invalid' : ''}`}
                   name="descripcion"
                   value={formData.descripcion}
                   onChange={handleChange}
                   rows="3"
-                  placeholder="Descripción del producto..."
+                  placeholder="Describe las características del producto, origen, beneficios, etc..."
                   disabled={loading}
+                  maxLength={PRODUCT_LIMITS.DESCRIPCION.max}
                 />
+                {errores.descripcion && <div className="invalid-feedback">{errores.descripcion}</div>}
+                {/* Contador de caracteres */}
+                {(() => {
+                  const contador = obtenerContadorCaracteres(formData.descripcion, 'descripcion');
+                  if (contador) {
+                    return (
+                      <small className={`form-text ${
+                        contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
+                      }`}>
+                        {contador.actual}/{contador.limite} caracteres
+                        {contador.actual < PRODUCT_LIMITS.DESCRIPCION.min && 
+                          ` (mínimo ${PRODUCT_LIMITS.DESCRIPCION.min} caracteres)`
+                        }
+                      </small>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div className="row">
                 <div className="col-md-4 mb-3">
-                  <label className="form-label">Precio *</label>
+                  <label className="form-label">Precio * (CLP)</label>
                   <div className="input-group">
                     <span className="input-group-text">$</span>
                     <input
@@ -228,16 +280,21 @@ const ProductoModal = ({
                       value={formData.precio}
                       onChange={handleChange}
                       min="0"
+                      max={PRODUCT_LIMITS.PRECIO.max}
                       step="0.01"
                       placeholder="0.00"
                       disabled={loading}
                     />
                     {errores.precio && <div className="invalid-feedback">{errores.precio}</div>}
                   </div>
+                  <small className="form-text text-muted">
+                    Máximo: ${PRODUCT_LIMITS.PRECIO.max.toLocaleString()} | 
+                    <span className="text-info">Usa 0 para productos gratuitos</span>
+                  </small>
                 </div>
 
                 <div className="col-md-4 mb-3">
-                  <label className="form-label">Cantidad *</label>
+                  <label className="form-label">Cantidad * (unidades)</label>
                   <input
                     type="number"
                     className={`form-control ${errores.cantidad ? 'is-invalid' : ''}`}
@@ -245,12 +302,20 @@ const ProductoModal = ({
                     value={formData.cantidad}
                     onChange={handleChange}
                     min="0"
+                    max={PRODUCT_LIMITS.CANTIDAD.max}
                     placeholder="0"
                     disabled={loading || formData.estado === 'agotado'}
                   />
                   {errores.cantidad && <div className="invalid-feedback">{errores.cantidad}</div>}
-                  {formData.estado === 'agotado' && (
-                    <small className="text-muted">Cantidad bloqueada porque el producto está agotado</small>
+                  {formData.estado === 'agotado' ? (
+                    <small className="text-warning">
+                      <i className="fas fa-lock me-1"></i>
+                      Cantidad bloqueada porque el producto está agotado
+                    </small>
+                  ) : (
+                    <small className="form-text text-muted">
+                      Máximo: {PRODUCT_LIMITS.CANTIDAD.max.toLocaleString()} unidades
+                    </small>
                   )}
                 </div>
 
@@ -274,13 +339,13 @@ const ProductoModal = ({
                 <label className="form-label">Fecha de Vencimiento *</label>
                 <input
                   type="date"
-                  className={`form-control ${errores.fechaVencimiento ? 'is-invalid' : ''}`}
-                  name="fechaVencimiento"
-                  value={formData.fechaVencimiento}
+                  className={`form-control ${errores.vencimiento ? 'is-invalid' : ''}`}
+                  name="vencimiento"
+                  value={formData.vencimiento}
                   onChange={handleChange}
                   disabled={loading}
                 />
-                {errores.fechaVencimiento && <div className="invalid-feedback">{errores.fechaVencimiento}</div>}
+                {errores.vencimiento && <div className="invalid-feedback">{errores.vencimiento}</div>}
               </div>
 
               <div className="mb-3">

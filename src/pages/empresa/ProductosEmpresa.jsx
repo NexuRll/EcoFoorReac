@@ -281,13 +281,17 @@ const ProductosEmpresa = () => {
   };
 
   // Guardar producto (crear o actualizar)
-  const handleGuardarProducto = async (datosProducto) => {
+  const handleGuardarProducto = async (datosProducto, productoId = null) => {
     try {
       setModalLoading(true);
       
-      if (productoEditando) {
+      // Usar el ID del producto editando o el ID pasado como parámetro
+      const esEdicion = productoEditando || productoId;
+      const idProducto = productoEditando?.id || productoId;
+      
+      if (esEdicion && idProducto) {
         // Actualizar producto existente
-        await productoService.actualizarProducto(productoEditando.id, datosProducto);
+        await productoService.actualizarProducto(idProducto, datosProducto);
         
         Swal.fire({
           icon: 'success',
@@ -513,14 +517,14 @@ const ProductosEmpresa = () => {
 
         {/* Modal de producto */}
         <ProductoModal
-          show={modalShow}
-          onHide={() => {
+          isOpen={modalShow}
+          onClose={() => {
             setModalShow(false);
             setProductoEditando(null);
           }}
           onSave={handleGuardarProducto}
           producto={productoEditando}
-          loading={modalLoading}
+          empresaId={currentUser?.uid}
         />
       </div>
   );

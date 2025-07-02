@@ -164,24 +164,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="container-fluid">
-      {/* Header de bienvenida */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="bg-success text-white p-4 rounded">
-            <h1 className="mb-2">
-              <i className="fas fa-tachometer-alt me-3"></i>
-              Panel de Administración EcoFood
-            </h1>
-            <p className="mb-0 lead">
-              Bienvenido, {userData?.Nombre || userData?.nombre || 'Administrador'}
-            </p>
-            <small className="opacity-75">
-              Gestiona empresas, usuarios y configuraciones del sistema
-            </small>
-          </div>
-        </div>
-      </div>
-
       {/* Tarjetas de estadísticas */}
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
@@ -330,7 +312,7 @@ export default function AdminDashboard() {
       <div className="row">
         <div className="col-12">
           <div className="card">
-            <div className="card-header bg-dark text-white">
+            <div className="card-header bg-success text-white">
               <h5 className="mb-0">
                 <i className="fas fa-user-cog me-2"></i>
                 Tu Información de Administrador

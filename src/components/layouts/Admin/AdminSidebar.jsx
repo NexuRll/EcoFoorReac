@@ -42,7 +42,7 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
         <div className="d-flex align-items-center justify-content-between">
           {!isCollapsed && (
             <div className="sidebar-brand">
-              <i className="fas fa-leaf text-success me-2"></i>
+              <i className="fas fa-leaf text-white me-2"></i>
               <span className="brand-text">EcoFood Admin</span>
             </div>
           )}
@@ -82,7 +82,7 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
       {/* Footer del Sidebar */}
       {!isCollapsed && (
         <div className="sidebar-footer">
-          <div className="text-center text-muted">
+          <div className="text-center text-white">
             <small>
               <i className="fas fa-shield-alt me-1"></i>
               Panel de Administración
@@ -96,14 +96,15 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
         .admin-sidebar {
           width: 280px;
           min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          /* Cambiado a gradiente verde de EcoFood */
+          background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #198754 100%);
           color: white;
           transition: all 0.3s ease;
           position: fixed;
           left: 0;
           top: 0;
           z-index: 1000;
-          box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+          box-shadow: 2px 0 15px rgba(40, 167, 69, 0.3);
         }
 
         .admin-sidebar.collapsed {
@@ -112,13 +113,17 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
 
         .sidebar-header {
           padding: 1rem;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.1);
+          backdrop-filter: blur(10px);
         }
 
         .sidebar-brand {
           font-size: 1.2rem;
-          font-weight: 600;
+          font-weight: 700;
           color: white;
+          display: flex;
+          align-items: center;
         }
 
         .brand-text {
@@ -126,18 +131,21 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          font-weight: 700;
         }
 
         .sidebar-toggle {
           color: white !important;
           padding: 0.25rem 0.5rem;
-          border-radius: 0.375rem;
+          border-radius: 0.5rem;
           transition: all 0.2s ease;
+          background: rgba(255,255,255,0.1);
         }
 
         .sidebar-toggle:hover {
-          background-color: rgba(255,255,255,0.1);
+          background-color: rgba(255,255,255,0.2);
           transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         .sidebar-nav {
@@ -149,24 +157,47 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
           display: flex;
           align-items: center;
           padding: 0.75rem 1rem;
-          color: rgba(255,255,255,0.8) !important;
+          color: rgba(255,255,255,0.9) !important;
           text-decoration: none;
           transition: all 0.3s ease;
           border-radius: 0;
           margin: 0.125rem 0.5rem;
-          border-radius: 0.5rem;
+          border-radius: 0.75rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .nav-link::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 100%;
+          background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+          transition: width 0.3s ease;
+          z-index: -1;
+        }
+
+        .nav-link:hover::before {
+          width: 100%;
         }
 
         .nav-link:hover {
-          background-color: rgba(255,255,255,0.1);
           color: white !important;
-          transform: translateX(5px);
+          transform: translateX(8px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .nav-link.active {
-          background-color: rgba(255,255,255,0.2);
+          background: linear-gradient(90deg, rgba(255,255,255,0.25), rgba(255,255,255,0.15));
           color: white !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          border-left: 4px solid #fff;
+        }
+
+        .nav-link.active::before {
+          width: 100%;
         }
 
         .nav-icon {
@@ -174,6 +205,7 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
           text-align: center;
           margin-right: 0.75rem;
           font-size: 1.1rem;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
         }
 
         .nav-content {
@@ -183,20 +215,24 @@ const AdminSidebar = ({ isCollapsed, onToggle }) => {
         }
 
         .nav-label {
-          font-weight: 500;
+          font-weight: 600;
           font-size: 0.95rem;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .nav-description {
           font-size: 0.75rem;
-          opacity: 0.7;
+          opacity: 0.8;
           margin-top: 0.125rem;
+          font-weight: 400;
         }
 
         .sidebar-footer {
           padding: 1rem;
-          border-top: 1px solid rgba(255,255,255,0.1);
+          border-top: 1px solid rgba(255,255,255,0.2);
           margin-top: auto;
+          background: rgba(255,255,255,0.1);
+          backdrop-filter: blur(10px);
         }
 
         /* Responsive */
