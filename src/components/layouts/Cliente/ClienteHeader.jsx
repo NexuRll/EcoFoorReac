@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { suscribirSolicitudesCliente } from '../../../services/productos/solicitudService';
+import { suscribirSolicitudesCliente, verificarYLimpiarSolicitudesAntiguas } from '../../../services/productos/solicitudService';
 import CarritoModal from '../../cliente/CarritoModal';
 import Swal from 'sweetalert2';
 
@@ -20,7 +20,22 @@ const ClienteHeader = () => {
       setSolicitudes(solicitudesActualizadas);
     });
 
-    return () => unsubscribe();
+    // Ejecutar limpieza inicial
+    verificarYLimpiarSolicitudesAntiguas(currentUser.uid).catch(error => {
+      console.error('Error en limpieza inicial:', error);
+    });
+
+    // Configurar limpieza periódica cada 30 minutos
+    const intervalId = setInterval(() => {
+      verificarYLimpiarSolicitudesAntiguas(currentUser.uid).catch(error => {
+        console.error('Error en limpieza periódica:', error);
+      });
+    }, 30 * 60 * 1000); // 30 minutos
+
+    return () => {
+      unsubscribe();
+      clearInterval(intervalId);
+    };
   }, [currentUser]);
 
   const handleLogout = async () => {

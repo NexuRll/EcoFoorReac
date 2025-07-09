@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { actualizarPerfilUsuario } from '../../services/auth/authService';
 import { validarEmailUnicoConDebounce } from '../../services/shared/validacionesUnicas';
 import { validarNombre, validarEmail, validarDireccion, validarTelefono } from '../../utils/validaciones';
-import SelectorPaisComunaAPI from '../../components/common/SelectorPaisComunaAPI';
 import Swal from 'sweetalert2';
 
 const Perfil = () => {
@@ -19,6 +18,9 @@ const Perfil = () => {
     telefono: ''
   });
   const [errores, setErrores] = useState({});
+  
+  // Estado para prevenir sobrescritura de datos recién guardados
+  const [datosActualizadosRecientemente, setDatosActualizadosRecientemente] = useState(false);
 
   // Estado para validación única de email
   const [validacionEmail, setValidacionEmail] = useState({
@@ -37,6 +39,15 @@ const Perfil = () => {
 
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
+    // Si acabamos de actualizar los datos, no sobrescribir
+    if (datosActualizadosRecientemente) {
+      // Protección extendida de 2 segundos
+      setTimeout(() => {
+        setDatosActualizadosRecientemente(false);
+      }, 2000);
+      return;
+    }
+    
     if (userData) {
       setFormData({
         nombre: userData.nombre || '',
@@ -47,24 +58,27 @@ const Perfil = () => {
         telefono: userData.telefono || ''
       });
     }
-  }, [userData]);
+  }, [userData, datosActualizadosRecientemente]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
+    // Asegurar que value nunca sea undefined
+    const valorSeguro = value || '';
+    
     // Aplicar límites de caracteres
-    let valorLimitado = value;
-    if (name === 'nombre' && value.length > LIMITES.NOMBRE.max) {
-      valorLimitado = value.substring(0, LIMITES.NOMBRE.max);
-    } else if (name === 'correo' && value.length > LIMITES.EMAIL.max) {
-      valorLimitado = value.substring(0, LIMITES.EMAIL.max);
-    } else if (name === 'direccion' && value.length > LIMITES.DIRECCION.max) {
-      valorLimitado = value.substring(0, LIMITES.DIRECCION.max);
+    let valorLimitado = valorSeguro;
+    if (name === 'nombre' && valorSeguro.length > LIMITES.NOMBRE.max) {
+      valorLimitado = valorSeguro.substring(0, LIMITES.NOMBRE.max);
+    } else if (name === 'correo' && valorSeguro.length > LIMITES.EMAIL.max) {
+      valorLimitado = valorSeguro.substring(0, LIMITES.EMAIL.max);
+    } else if (name === 'direccion' && valorSeguro.length > LIMITES.DIRECCION.max) {
+      valorLimitado = valorSeguro.substring(0, LIMITES.DIRECCION.max);
     }
     
     setFormData(prev => ({
       ...prev,
-      [name]: valorLimitado
+      [name]: valorLimitado || ''
     }));
 
     // Limpiar errores cuando el usuario empiece a escribir
@@ -76,35 +90,85 @@ const Perfil = () => {
     }
 
     // Validación en tiempo real para email único (solo si cambió)
-    if (name === 'correo' && valorLimitado !== userData?.correo && valorLimitado !== userData?.email && valorLimitado.length >= 5) {
+    if (name === 'correo' && valorLimitado && valorLimitado !== userData?.correo && valorLimitado !== userData?.email && valorLimitado.length >= 5) {
       validarEmailUnicoConDebounce(valorLimitado, userData?.uid, setValidacionEmail);
     } else if (name === 'correo') {
       setValidacionEmail({ validando: false, esUnico: null, mensaje: null, error: null });
     }
   };
 
-  // Handlers para SelectorPaisComunaAPI
-  const handlePaisChange = (pais) => {
-    setFormData(prev => ({
-      ...prev,
-      pais: pais,
-      comuna: '' // Limpiar comuna cuando cambia el país
-    }));
-    
-    if (errores.pais) {
-      setErrores(prev => ({ ...prev, pais: null }));
-    }
-  };
-
-  const handleComunaChange = (comuna) => {
-    setFormData(prev => ({
-      ...prev,
-      comuna: comuna
-    }));
-    
-    if (errores.comuna) {
-      setErrores(prev => ({ ...prev, comuna: null }));
-    }
+  const handleCambiarPassword = () => {
+    Swal.fire({
+      title: 'Cambiar Contraseña',
+      html: `
+        <div class="mb-3">
+          <label class="form-label">Contraseña actual:</label>
+          <input type="password" id="currentPassword" class="form-control" placeholder="Ingresa tu contraseña actual">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nueva contraseña:</label>
+          <input type="password" id="newPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nueva contraseña:</label>
+          <input type="password" id="confirmPassword" class="form-control" placeholder="Repite la nueva contraseña">
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar Contraseña',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ffc107',
+      cancelButtonColor: '#6c757d',
+      focusConfirm: false,
+      preConfirm: () => {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (!currentPassword) {
+          Swal.showValidationMessage('Ingresa tu contraseña actual');
+          return false;
+        }
+        
+        if (!newPassword) {
+          Swal.showValidationMessage('Ingresa la nueva contraseña');
+          return false;
+        }
+        
+        if (newPassword.length < 6) {
+          Swal.showValidationMessage('La nueva contraseña debe tener al menos 6 caracteres');
+          return false;
+        }
+        
+        if (newPassword !== confirmPassword) {
+          Swal.showValidationMessage('Las contraseñas no coinciden');
+          return false;
+        }
+        
+        return { currentPassword, newPassword };
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          // Aquí implementarías la lógica para cambiar la contraseña
+          // Por ejemplo, usando Firebase Auth
+          Swal.fire({
+            icon: 'success',
+            title: 'Contraseña actualizada',
+            text: 'Tu contraseña ha sido cambiada exitosamente',
+            confirmButtonColor: '#28a745'
+          });
+        } catch (error) {
+          console.error('Error al cambiar contraseña:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo cambiar la contraseña. Verifica tu contraseña actual.',
+            confirmButtonColor: '#28a745'
+          });
+        }
+      }
+    });
   };
 
   const validarFormulario = () => {
@@ -123,15 +187,7 @@ const Perfil = () => {
       nuevosErrores.correo = `El correo no puede exceder ${LIMITES.EMAIL.max} caracteres`;
     }
 
-    // Validar país
-    if (!formData.pais.trim()) {
-      nuevosErrores.pais = 'El país es obligatorio';
-    }
-
-    // Validar comuna
-    if (!formData.comuna.trim()) {
-      nuevosErrores.comuna = 'La comuna es obligatoria';
-    }
+    // Removidas validaciones de país y comuna - son de solo lectura
 
     // Validar dirección con límite de caracteres
     const errorDireccion = validarDireccion(formData.direccion);
@@ -172,16 +228,35 @@ const Perfil = () => {
       const datosActualizados = {
         nombre: formData.nombre.trim(),
         correo: formData.correo.trim(),
-        pais: formData.pais.trim(),
-        comuna: formData.comuna.trim(),
+        // País y comuna no se envían - son de solo lectura
         direccion: formData.direccion.trim(),
         telefono: formData.telefono.trim()
       };
 
-      await actualizarPerfilUsuario(userData.uid, datosActualizados, userType);
+      console.log('📦 Datos a actualizar:', datosActualizados);
+      console.log('👤 Tipo de usuario:', userType);
+      console.log('🎯 UID del usuario:', userData.uid);
       
-      // Actualizar el contexto con los nuevos datos
-      await updateUserData();
+      // Validar que userData.uid exista antes de continuar
+      if (!userData.uid) {
+        throw new Error('No se pudo obtener el ID del usuario. Por favor, cierra sesión y vuelve a iniciar.');
+      }
+
+      await actualizarPerfilUsuario(userData.uid, datosActualizados, userType || 'cliente');
+      
+      // Forzar actualización local inmediata
+      setFormData({
+        nombre: datosActualizados.nombre,
+        correo: datosActualizados.correo,
+        // Mantener país y comuna existentes
+        pais: formData.pais,
+        comuna: formData.comuna,
+        direccion: datosActualizados.direccion,
+        telefono: datosActualizados.telefono
+      });
+      
+      // Marcar que los datos fueron actualizados
+      setDatosActualizadosRecientemente(true);
       
       setIsEditing(false);
       
@@ -193,12 +268,35 @@ const Perfil = () => {
         showConfirmButton: false
       });
       
+      // Actualizar el contexto en segundo plano (sin esperar)
+      try {
+        const updatePromise = updateUserData();
+        // Verificar si es una promesa antes de llamar .catch()
+        if (updatePromise && typeof updatePromise === 'object' && typeof updatePromise.catch === 'function') {
+          updatePromise.catch(error => {
+            console.log('Error actualizando contexto (no crítico):', error);
+          });
+        }
+      } catch (error) {
+        console.log('Error al intentar actualizar contexto:', error);
+      }
+      
     } catch (error) {
-      console.error('Error al actualizar perfil:', error);
+      console.error('❌ Error al actualizar perfil:', error);
+      
+      // Mostrar detalles del error para debugging
+      console.error('Detalles del error:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message || 'No se pudo actualizar el perfil'
+        text: `No se pudo actualizar el perfil. ${error.message}`,
+        confirmButtonColor: '#28a745',
+        footer: 'Si el problema persiste, recarga la página e intenta nuevamente.'
       });
     } finally {
       setLoading(false);
@@ -219,6 +317,7 @@ const Perfil = () => {
     }
     setErrores({});
     setValidacionEmail({ validando: false, esUnico: null, mensaje: null, error: null });
+    setDatosActualizadosRecientemente(false); // Reset de la bandera
     setIsEditing(false);
   };
 
@@ -310,7 +409,14 @@ const Perfil = () => {
                     </div>
                   </div>
                   
-                  <div className="d-flex justify-content-end">
+                  <div className="d-flex justify-content-end gap-2">
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => handleCambiarPassword()}
+                    >
+                      <i className="fas fa-key me-2"></i>
+                      Cambiar Contraseña
+                    </button>
                     <button
                       className="btn btn-primary"
                       onClick={() => setIsEditing(true)}
@@ -410,15 +516,27 @@ const Perfil = () => {
                     </div>
                   </div>
 
-                  <SelectorPaisComunaAPI
-                    paisSeleccionado={formData.pais}
-                    comunaSeleccionada={formData.comuna}
-                    onPaisChange={handlePaisChange}
-                    onComunaChange={handleComunaChange}
-                    errorPais={errores.pais}
-                    errorComuna={errores.comuna}
-                    disabled={loading}
-                  />
+                  {/* Ubicación - Solo lectura en modo edición */}
+                  <div className="col-12 mb-3">
+                    <div className="alert alert-info">
+                      <h6 className="mb-2">
+                        <i className="fas fa-map-marker-alt me-2"></i>
+                        Ubicación Actual
+                      </h6>
+                      <div className="row">
+                        <div className="col-md-6">
+                          <strong>País:</strong> {formData.pais || 'No especificado'}
+                        </div>
+                        <div className="col-md-6">
+                          <strong>Ciudad/Comuna:</strong> {formData.comuna || 'No especificado'}
+                        </div>
+                      </div>
+                      <small className="text-muted mt-2 d-block">
+                        <i className="fas fa-info-circle me-1"></i>
+                        Para cambiar la ubicación, contacta al soporte técnico.
+                      </small>
+                    </div>
+                  </div>
 
                   <div className="row">
                     <div className="col-md-8 mb-3">

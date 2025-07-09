@@ -24,8 +24,6 @@ const ProductosEmpresa = () => {
   const [estadisticas, setEstadisticas] = useState({
     total: 0,
     disponibles: 0,
-    porVencer: 0,
-    vencidos: 0,
     agotados: 0,
     gratuitos: 0
   });
@@ -147,8 +145,6 @@ const ProductosEmpresa = () => {
     const stats = {
       total: productosData.length,
       disponibles: 0,
-      porVencer: 0,
-      vencidos: 0,
       agotados: 0,
       gratuitos: 0
     };
@@ -158,15 +154,11 @@ const ProductosEmpresa = () => {
       
       switch (estado) {
         case PRODUCT_STATUS.DISPONIBLE:
+        case PRODUCT_STATUS.POR_VENCER: // Tratamos productos por vencer como disponibles
           stats.disponibles++;
           break;
-        case PRODUCT_STATUS.POR_VENCER:
-          stats.porVencer++;
-          break;
-        case PRODUCT_STATUS.VENCIDO:
-          stats.vencidos++;
-          break;
         case PRODUCT_STATUS.AGOTADO:
+        case PRODUCT_STATUS.VENCIDO: // Tratamos productos vencidos como agotados
           stats.agotados++;
           break;
       }
@@ -372,7 +364,7 @@ const ProductosEmpresa = () => {
 
         {/* Estadísticas rápidas */}
         <div className="row mb-4">
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-xl-3 col-md-6 col-sm-6 mb-3">
             <div className="card bg-primary text-white h-100">
               <div className="card-body text-center">
                 <i className="fas fa-box fa-2x mb-2"></i>
@@ -381,7 +373,7 @@ const ProductosEmpresa = () => {
               </div>
             </div>
           </div>
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-xl-3 col-md-6 col-sm-6 mb-3">
             <div className="card bg-success text-white h-100">
               <div className="card-body text-center">
                 <i className="fas fa-check-circle fa-2x mb-2"></i>
@@ -390,25 +382,7 @@ const ProductosEmpresa = () => {
               </div>
             </div>
           </div>
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div className="card bg-warning text-white h-100">
-              <div className="card-body text-center">
-                <i className="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                <h4 className="mb-0">{estadisticas.porVencer}</h4>
-                <small>Por Vencer</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div className="card bg-danger text-white h-100">
-              <div className="card-body text-center">
-                <i className="fas fa-times-circle fa-2x mb-2"></i>
-                <h4 className="mb-0">{estadisticas.vencidos}</h4>
-                <small>Vencidos</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-xl-3 col-md-6 col-sm-6 mb-3">
             <div className="card bg-secondary text-white h-100">
               <div className="card-body text-center">
                 <i className="fas fa-ban fa-2x mb-2"></i>
@@ -417,7 +391,7 @@ const ProductosEmpresa = () => {
               </div>
             </div>
           </div>
-          <div className="col-xl-2 col-md-4 col-sm-6 mb-3">
+          <div className="col-xl-3 col-md-6 col-sm-6 mb-3">
             <div className="card bg-info text-white h-100">
               <div className="card-body text-center">
                 <i className="fas fa-gift fa-2x mb-2"></i>

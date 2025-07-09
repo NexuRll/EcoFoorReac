@@ -3,8 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import EmpresaInfo from '../../components/empresa/perfil/EmpresaInfo';
 import LoadingSpinner from '../../components/common/ui/LoadingSpinner';
 import InputField from '../../components/common/forms/InputField';
-import SelectField from '../../components/common/forms/SelectField';
-import SelectorPaisComunaAPI from '../../components/common/SelectorPaisComunaAPI';
 import { empresaService } from '../../services/empresa/empresaFirebase';
 import Swal from 'sweetalert2';
 
@@ -26,39 +24,6 @@ const PerfilEmpresa = () => {
   });
   const [errors, setErrors] = useState({});
 
-  // Funciones para manejar cambios del selector de país y comuna
-  const handlePaisChange = (pais) => {
-    setFormData(prev => ({
-      ...prev,
-      pais: pais,
-      comuna: '' // Limpiar comuna al cambiar país
-    }));
-
-    // Limpiar errores
-    if (errors.pais) {
-      setErrors(prev => ({
-        ...prev,
-        pais: '',
-        comuna: '' // También limpiar error de comuna
-      }));
-    }
-  };
-
-  const handleComunaChange = (comuna) => {
-    setFormData(prev => ({
-      ...prev,
-      comuna: comuna
-    }));
-
-    // Limpiar error de comuna
-    if (errors.comuna) {
-      setErrors(prev => ({
-        ...prev,
-        comuna: ''
-      }));
-    }
-  };
-
   // Cargar datos de la empresa
   const cargarDatosEmpresa = async () => {
     try {
@@ -71,7 +36,7 @@ const PerfilEmpresa = () => {
           nombre: userData.nombre || userData.Nombre || '',
           telefono: userData.telefono || '',
           direccion: userData.direccion || '',
-          pais: userData.pais || 'Chile',
+          pais: userData.pais || '', // Quitar valor por defecto 'Chile'
           comuna: userData.comuna || '',
           descripcion: userData.descripcion || ''
         });
@@ -111,13 +76,7 @@ const PerfilEmpresa = () => {
       newErrors.direccion = 'La dirección no puede exceder 100 caracteres';
     }
 
-    if (!formData.pais) {
-      newErrors.pais = 'Selecciona un país';
-    }
-
-    if (!formData.comuna) {
-      newErrors.comuna = 'Selecciona una comuna';
-    }
+    // Removidas validaciones de país y comuna - son de solo lectura
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -127,9 +86,12 @@ const PerfilEmpresa = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
+    // Asegurar que value nunca sea undefined
+    const valorSeguro = value || '';
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: valorSeguro
     }));
 
     // Limpiar error del campo
@@ -160,7 +122,14 @@ const PerfilEmpresa = () => {
       await empresaService.actualizarEmpresa(currentUser.uid, datosActualizados);
 
       // Actualizar contexto
-      await updateUserData();
+      try {
+        const updatePromise = updateUserData();
+        if (updatePromise && typeof updatePromise === 'object' && typeof updatePromise.then === 'function') {
+          await updatePromise;
+        }
+      } catch (error) {
+        console.log('Error actualizando contexto (no crítico):', error);
+      }
 
       Swal.fire({
         icon: 'success',
@@ -173,8 +142,8 @@ const PerfilEmpresa = () => {
 
       setIsEditing(false);
       
-      // Recargar datos
-      cargarDatosEmpresa();
+      // Actualizar los datos locales con los datos guardados
+      setEmpresaData(prev => ({ ...prev, ...datosActualizados }));
     } catch (error) {
       console.error('Error actualizando perfil:', error);
       Swal.fire({
@@ -192,7 +161,18 @@ const PerfilEmpresa = () => {
   const handleCancelar = () => {
     setIsEditing(false);
     setErrors({});
-    cargarDatosEmpresa(); // Recargar datos originales
+    
+    // Restaurar datos originales del formulario
+    if (userData) {
+      setFormData({
+        nombre: userData.nombre || userData.Nombre || '',
+        telefono: userData.telefono || '',
+        direccion: userData.direccion || '',
+        pais: userData.pais || '',
+        comuna: userData.comuna || '',
+        descripcion: userData.descripcion || ''
+      });
+    }
   };
 
   // Cargar datos al montar el componente
@@ -310,7 +290,7 @@ const PerfilEmpresa = () => {
                         />
                       </div>
 
-                      {/* Ubicación */}
+                      {/* Dirección */}
                       <div className="col-12">
                         <InputField
                           label="Dirección"
@@ -326,21 +306,25 @@ const PerfilEmpresa = () => {
                         />
                       </div>
 
-                      {/* Selector de País y Comuna con API */}
+                      {/* Ubicación - Solo lectura en modo edición */}
                       <div className="col-12">
-                        <div className="row">
-                          <div className="col-md-6">
-                            <SelectorPaisComunaAPI
-                              paisSeleccionado={formData.pais}
-                              comunaSeleccionada={formData.comuna}
-                              onPaisChange={handlePaisChange}
-                              onComunaChange={handleComunaChange}
-                              errores={{ pais: errors.pais, comuna: errors.comuna }}
-                              disabled={saving}
-                              paisLabel="País"
-                              comunaLabel="Ciudad/Comuna"
-                            />
+                        <div className="alert alert-info">
+                          <h6 className="mb-2">
+                            <i className="fas fa-map-marker-alt me-2"></i>
+                            Ubicación Actual
+                          </h6>
+                          <div className="row">
+                            <div className="col-md-6">
+                              <strong>País:</strong> {formData.pais || 'No especificado'}
+                            </div>
+                            <div className="col-md-6">
+                              <strong>Ciudad/Comuna:</strong> {formData.comuna || 'No especificado'}
+                            </div>
                           </div>
+                          <small className="text-muted mt-2 d-block">
+                            <i className="fas fa-info-circle me-1"></i>
+                            Para cambiar la ubicación, contacta al soporte técnico.
+                          </small>
                         </div>
                       </div>
 

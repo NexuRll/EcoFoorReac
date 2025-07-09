@@ -10,10 +10,146 @@ import {
   updateDoc,
   onSnapshot,
   getDoc,
-  runTransaction
+  runTransaction,
+  deleteDoc
 } from 'firebase/firestore';
 
-// Crear una nueva solicitud de producto
+// Función para limpiar solicitudes pendientes antiguas (más de 24 horas)
+export const limpiarSolicitudesPendientesAntiguas = async (clienteId) => {
+  try {
+    const hace24Horas = new Date();
+    hace24Horas.setHours(hace24Horas.getHours() - 24);
+    
+    const q = query(
+      collection(db, 'solicitudes'),
+      where('clienteId', '==', clienteId),
+      where('estado', '==', 'pendiente')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const solicitudesAEliminar = [];
+    
+    querySnapshot.forEach((docSnapshot) => {
+      const solicitud = docSnapshot.data();
+      const fechaSolicitud = new Date(solicitud.fechaSolicitud);
+      
+      // Si la solicitud tiene más de 24 horas, marcarla para eliminación
+      if (fechaSolicitud < hace24Horas) {
+        solicitudesAEliminar.push({
+          id: docSnapshot.id,
+          ...solicitud
+        });
+      }
+    });
+    
+    // Eliminar solicitudes pendientes antiguas
+    const promesasEliminacion = solicitudesAEliminar.map(solicitud => 
+      deleteDoc(doc(db, 'solicitudes', solicitud.id))
+    );
+    
+    await Promise.all(promesasEliminacion);
+    
+    console.log(`🗑️ Eliminadas ${solicitudesAEliminar.length} solicitudes pendientes antiguas`);
+    return solicitudesAEliminar.length;
+  } catch (error) {
+    console.error('Error al limpiar solicitudes pendientes antiguas:', error);
+    throw error;
+  }
+};
+
+// Función para verificar y limpiar solicitudes al cargar el carrito
+export const verificarYLimpiarSolicitudesAntiguas = async (clienteId) => {
+  try {
+    const eliminadas = await limpiarSolicitudesPendientesAntiguas(clienteId);
+    if (eliminadas > 0) {
+      console.log(`🧹 Limpieza automática: ${eliminadas} solicitudes pendientes eliminadas`);
+    }
+    return eliminadas;
+  } catch (error) {
+    console.error('Error en verificación de limpieza:', error);
+    return 0;
+  }
+};
+
+// Función para cancelar una solicitud pendiente
+export const cancelarSolicitudPendiente = async (solicitudId) => {
+  try {
+    // Usar una transacción para asegurar consistencia
+    return await runTransaction(db, async (transaction) => {
+      // Obtener la solicitud
+      const solicitudRef = doc(db, 'solicitudes', solicitudId);
+      const solicitudDoc = await transaction.get(solicitudRef);
+      
+      if (!solicitudDoc.exists()) {
+        throw new Error('Solicitud no encontrada');
+      }
+      
+      const solicitudData = solicitudDoc.data();
+      
+      // Verificar que la solicitud esté pendiente
+      if (solicitudData.estado !== 'pendiente') {
+        throw new Error('Solo se pueden cancelar solicitudes pendientes');
+      }
+      
+      // Restaurar el stock del producto
+      const productoRef = doc(db, 'productos', solicitudData.productoId);
+      const productoDoc = await transaction.get(productoRef);
+      
+      if (productoDoc.exists()) {
+        const productoData = productoDoc.data();
+        const stockActual = productoData.cantidad || 0;
+        const cantidadACancelar = solicitudData.cantidad || 0;
+        const nuevoStock = stockActual + cantidadACancelar;
+        
+        // Actualizar el stock del producto
+        transaction.update(productoRef, {
+          cantidad: nuevoStock,
+          fechaActualizacion: new Date().toISOString()
+        });
+        
+        console.log(`📦 Stock restaurado: ${cantidadACancelar} unidades devueltas a ${solicitudData.nombreProducto}`);
+      }
+      
+      // Eliminar la solicitud completamente
+      transaction.delete(solicitudRef);
+      
+      console.log(`❌ Solicitud cancelada y eliminada: ${solicitudData.nombreProducto}`);
+      
+      return {
+        nombreProducto: solicitudData.nombreProducto,
+        cantidad: solicitudData.cantidad,
+        stockRestaurado: true
+      };
+    });
+  } catch (error) {
+    console.error('Error al cancelar solicitud:', error);
+    throw error;
+  }
+};
+
+// Función para verificar si una solicitud se puede cancelar
+export const puedeCancelarSolicitud = (solicitud) => {
+  return solicitud.estado === 'pendiente';
+};
+
+// Función para obtener el tiempo transcurrido desde la solicitud
+export const obtenerTiempoTranscurrido = (fechaSolicitud) => {
+  const ahora = new Date();
+  const fecha = new Date(fechaSolicitud);
+  const diferencia = ahora - fecha;
+  
+  const minutos = Math.floor(diferencia / (1000 * 60));
+  const horas = Math.floor(diferencia / (1000 * 60 * 60));
+  const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+  
+  if (dias > 0) {
+    return `hace ${dias} día${dias > 1 ? 's' : ''}`;
+  } else if (horas > 0) {
+    return `hace ${horas} hora${horas > 1 ? 's' : ''}`;
+  } else {
+    return `hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+  }
+};
 export const crearSolicitudProducto = async (solicitudData) => {
   try {
     const solicitud = {

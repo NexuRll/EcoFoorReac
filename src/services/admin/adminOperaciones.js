@@ -120,4 +120,60 @@ export const eliminarAdministrador = async (adminId) => {
     console.error("Error al eliminar administrador:", error);
     throw error;
   }
+};
+
+/**
+ * Actualiza el perfil del administrador actual
+ * @param {string} adminId - ID del administrador
+ * @param {Object} perfilData - Datos del perfil a actualizar
+ * @returns {Promise<boolean>} - True si la actualización fue exitosa
+ */
+export const actualizarPerfilAdmin = async (adminId, perfilData) => {
+  try {
+    console.log('actualizarPerfilAdmin llamado con:', { adminId, perfilData });
+    
+    // Validar parámetros de entrada
+    if (!adminId) {
+      throw new Error('AdminId es requerido');
+    }
+    
+    if (!perfilData) {
+      throw new Error('PerfilData es requerido');
+    }
+    
+    // Validar y preparar los datos para actualizar
+    const datosActualizacion = {
+      Nombre: perfilData.Nombre || '',
+      Correo: perfilData.Correo || '',
+      telefono: perfilData.telefono || '',
+      FechaActualizacion: new Date().toISOString()
+    };
+    
+    console.log('Datos a actualizar:', datosActualizacion);
+    console.log('Colección admin:', COLECCION_ADMIN);
+    
+    // Verificar si el documento existe
+    const adminDocRef = doc(db, COLECCION_ADMIN, adminId);
+    const adminDoc = await getDoc(adminDocRef);
+    
+    if (!adminDoc.exists()) {
+      throw new Error(`Administrador con ID ${adminId} no encontrado`);
+    }
+    
+    console.log('Administrador encontrado, actualizando...');
+    
+    // Actualizar el documento del administrador
+    await updateDoc(adminDocRef, datosActualizacion);
+    
+    console.log('Perfil de administrador actualizado correctamente:', adminId);
+    return true;
+  } catch (error) {
+    console.error('Error detallado al actualizar perfil de administrador:', {
+      error: error.message,
+      stack: error.stack,
+      adminId,
+      perfilData
+    });
+    throw new Error('No se pudo actualizar el perfil: ' + error.message);
+  }
 }; 

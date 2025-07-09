@@ -237,9 +237,7 @@ export const validarFormularioProducto = (datosProducto) => {
   const errorDescripcion = validarDescripcionProducto(datosProducto.descripcion);
   if (errorDescripcion) errores.descripcion = errorDescripcion;
   
-  // Validar categoría
-  const errorCategoria = validarCategoriaProducto(datosProducto.categoria);
-  if (errorCategoria) errores.categoria = errorCategoria;
+  // Categoría eliminada - ya no se valida
   
   // Validar precio
   const errorPrecio = validarPrecioProducto(datosProducto.precio);
@@ -253,9 +251,7 @@ export const validarFormularioProducto = (datosProducto) => {
   const errorVencimiento = validarFechaVencimiento(datosProducto.vencimiento);
   if (errorVencimiento) errores.vencimiento = errorVencimiento;
   
-  // Validar imagen (opcional)
-  const errorImagen = validarImagenProducto(datosProducto.imagen);
-  if (errorImagen) errores.imagen = errorImagen;
+  // Imagen eliminada - ya no se valida
   
   // Validaciones cruzadas
   if (datosProducto.estado === 'agotado' && parseInt(datosProducto.cantidad) !== 0) {

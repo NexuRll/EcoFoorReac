@@ -22,21 +22,36 @@ export const AuthProvider = ({ children }) => {
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
-        return { id: userDoc.id, ...userDoc.data(), tipo: userDoc.data().tipo || 'usuario' };
+        return { 
+          id: userDoc.id, 
+          uid: uid, // Asegurar que uid esté presente
+          ...userDoc.data(), 
+          tipo: userDoc.data().tipo || 'usuario' 
+        };
       } else {
         // Intentar buscar en colección de empresas si no es un usuario regular
         const empresaDocRef = doc(db, "empresas", uid);
         const empresaDoc = await getDoc(empresaDocRef);
         
         if (empresaDoc.exists()) {
-          return { id: empresaDoc.id, ...empresaDoc.data(), tipo: 'empresa' };
+          return { 
+            id: empresaDoc.id, 
+            uid: uid, // Asegurar que uid esté presente
+            ...empresaDoc.data(), 
+            tipo: 'empresa' 
+          };
         } else {
           // Intentar buscar en colección de administradores
           const adminDocRef = doc(db, "Administrador", uid);
           const adminDoc = await getDoc(adminDocRef);
           
           if (adminDoc.exists()) {
-            return { id: adminDoc.id, ...adminDoc.data(), tipo: 'admin' };
+            return { 
+              id: adminDoc.id, 
+              uid: uid, // Asegurar que uid esté presente
+              ...adminDoc.data(), 
+              tipo: 'admin' 
+            };
           }
         }
       }
@@ -116,11 +131,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Función para actualizar los datos del usuario en el contexto
-  const updateUserData = (newData) => {
-    setUserData(prevData => ({
-      ...prevData,
-      ...newData
-    }));
+  const updateUserData = async (newData) => {
+    try {
+      if (newData) {
+        // Si se pasan nuevos datos, actualizarlos directamente
+        setUserData(prevData => ({
+          ...prevData,
+          ...newData
+        }));
+      } else {
+        // Si no se pasan datos, refrescar desde la base de datos
+        if (currentUser) {
+          const freshData = await fetchUserData(currentUser.uid);
+          if (freshData) {
+            setUserData(freshData);
+            setUserType(freshData.tipo || 'usuario');
+          }
+        }
+      }
+      return true; // Indicar éxito
+    } catch (error) {
+      console.error('Error actualizando datos del usuario:', error);
+      throw error;
+    }
   };
 
   const value = {

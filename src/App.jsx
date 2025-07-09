@@ -13,6 +13,7 @@ import ProtectedByRole from './routes/ProtectedByRole';
 import ConfigPage from './pages/admin/ConfigPage';
 import AdminEmpresas from './pages/admin/AdminEmpresas';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import PerfilAdmin from './pages/admin/PerfilAdmin';
 import UsuariosPage from './pages/admin/UsuariosPage';
 import EmpresaDashboard from './pages/empresa/EmpresaDashboard';
 import PerfilEmpresa from './pages/empresa/PerfilEmpresa';
@@ -83,6 +84,7 @@ const AppContent = () => {
           }>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="perfil" element={<PerfilAdmin />} />
             <Route path="empresas" element={<AdminEmpresas />} />
             <Route path="clientes" element={<UsuariosPage />} />
             <Route path="usuarios" element={<Navigate to="/admin/clientes" replace />} />

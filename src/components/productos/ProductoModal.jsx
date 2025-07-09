@@ -17,12 +17,10 @@ const ProductoModal = ({
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    categoria: '',
     precio: '',
     cantidad: '',
     vencimiento: '',
-    estado: 'disponible',
-    imagen: ''
+    estado: 'disponible'
   });
 
   const [errores, setErrores] = useState({});
@@ -34,24 +32,20 @@ const ProductoModal = ({
       setFormData({
         nombre: producto.nombre || '',
         descripcion: producto.descripcion || '',
-        categoria: producto.categoria || '',
         precio: producto.precio || '',
         cantidad: producto.cantidad || '',
         vencimiento: producto.vencimiento || '',
-        estado: producto.estado || 'disponible',
-        imagen: producto.imagen || ''
+        estado: producto.estado || 'disponible'
       });
     } else {
       // Limpiar formulario para nuevo producto
       setFormData({
         nombre: '',
         descripcion: '',
-        categoria: '',
         precio: '',
         cantidad: '',
         vencimiento: '',
-        estado: 'disponible',
-        imagen: ''
+        estado: 'disponible'
       });
     }
     setErrores({});
@@ -89,8 +83,6 @@ const ProductoModal = ({
       if (!isNaN(precioNum) && precioNum > PRODUCT_LIMITS.PRECIO.max) {
         valorFormateado = PRODUCT_LIMITS.PRECIO.max.toString();
       }
-    } else if (name === 'imagen') {
-      valorFormateado = formatearInputProducto(value, 'imagen');
     }
     
     // Lógica especial para cantidad cuando el estado es "agotado"
@@ -125,12 +117,18 @@ const ProductoModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('🔄 Enviando formulario con datos:', formData);
+    
     const erroresValidacion = validarFormulario();
+    console.log('🔍 Errores de validación:', erroresValidacion);
+    
     if (Object.keys(erroresValidacion).length > 0) {
+      console.log('❌ Formulario inválido, mostrando errores');
       setErrores(erroresValidacion);
       return;
     }
 
+    console.log('✅ Formulario válido, enviando...');
     setLoading(true);
     
     try {
@@ -143,7 +141,11 @@ const ProductoModal = ({
         fechaActualizacion: new Date().toISOString()
       };
 
+      console.log('📦 Datos del producto a enviar:', productoData);
+      
       await onSave(productoData, producto?.id);
+      
+      console.log('✅ Producto guardado exitosamente');
       
       Swal.fire({
         icon: 'success',
@@ -155,7 +157,7 @@ const ProductoModal = ({
 
       onClose();
     } catch (error) {
-      console.error('Error al guardar producto:', error);
+      console.error('❌ Error al guardar producto:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -182,59 +184,50 @@ const ProductoModal = ({
           
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Nombre del Producto *</label>
-                  <input
-                    type="text"
-                    className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    placeholder="Ej: Manzanas Rojas Orgánicas"
-                    disabled={loading}
-                    maxLength={PRODUCT_LIMITS.NOMBRE.max}
-                  />
-                  {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
-                  {/* Contador de caracteres */}
-                  {(() => {
-                    const contador = obtenerContadorCaracteres(formData.nombre, 'nombre');
-                    if (contador) {
-                      return (
-                        <small className={`form-text ${
-                          contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
-                        }`}>
-                          {contador.actual}/{contador.limite} caracteres
-                          {contador.actual < PRODUCT_LIMITS.NOMBRE.min && 
-                            ` (mínimo ${PRODUCT_LIMITS.NOMBRE.min})`
-                          }
-                        </small>
-                      );
-                    }
-                    return null;
-                  })()} 
-                </div>
+            <div className="row">
+            <div className="col-md-6 mb-3">
+            <label className="form-label">Nombre del Producto *</label>
+            <input
+            type="text"
+            className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
+            name="nombre"
+            value={formData.nombre}
+            onChange={handleChange}
+            placeholder="Ej: Manzanas Rojas Orgánicas"
+            disabled={loading}
+            maxLength={PRODUCT_LIMITS.NOMBRE.max}
+            />
+            {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
+            {/* Contador de caracteres */}
+            {(() => {
+            const contador = obtenerContadorCaracteres(formData.nombre, 'nombre');
+            if (contador) {
+            return (
+            <small className={`form-text ${
+            contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
+            }`}>
+            {contador.actual}/{contador.limite} caracteres
+            </small>
+            );
+            }
+            return null;
+            })()}
+            </div>
 
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Categoría *</label>
+            <div className="col-md-6 mb-3">
+              <label className="form-label">Estado</label>
                   <select
-                    className={`form-select ${errores.categoria ? 'is-invalid' : ''}`}
-                    name="categoria"
-                    value={formData.categoria}
-                    onChange={handleChange}
-                    disabled={loading}
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    <option value="frutas">Frutas</option>
-                    <option value="verduras">Verduras</option>
-                    <option value="lacteos">Lácteos</option>
-                    <option value="carnes">Carnes</option>
-                    <option value="panaderia">Panadería</option>
-                    <option value="otros">Otros</option>
-                  </select>
-                  {errores.categoria && <div className="invalid-feedback">{errores.categoria}</div>}
-                </div>
-              </div>
+                className="form-select"
+              name="estado"
+              value={formData.estado}
+            onChange={handleChange}
+            disabled={loading}
+            >
+            <option value="disponible">Disponible</option>
+            <option value="agotado">Agotado</option>
+            </select>
+            </div>
+            </div>
 
               <div className="mb-3">
                 <label className="form-label">Descripción *</label>
@@ -255,12 +248,9 @@ const ProductoModal = ({
                   if (contador) {
                     return (
                       <small className={`form-text ${
-                        contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
+                      contador.esCercaDelLimite ? 'text-warning' : 'text-muted'
                       }`}>
-                        {contador.actual}/{contador.limite} caracteres
-                        {contador.actual < PRODUCT_LIMITS.DESCRIPCION.min && 
-                          ` (mínimo ${PRODUCT_LIMITS.DESCRIPCION.min} caracteres)`
-                        }
+                      {contador.actual}/{contador.limite} caracteres
                       </small>
                     );
                   }
@@ -269,7 +259,7 @@ const ProductoModal = ({
               </div>
 
               <div className="row">
-                <div className="col-md-4 mb-3">
+                <div className="col-md-6 mb-3">
                   <label className="form-label">Precio * (CLP)</label>
                   <div className="input-group">
                     <span className="input-group-text">$</span>
@@ -293,7 +283,7 @@ const ProductoModal = ({
                   </small>
                 </div>
 
-                <div className="col-md-4 mb-3">
+                <div className="col-md-6 mb-3">
                   <label className="form-label">Cantidad * (unidades)</label>
                   <input
                     type="number"
@@ -318,21 +308,6 @@ const ProductoModal = ({
                     </small>
                   )}
                 </div>
-
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">Estado</label>
-                  <select
-                    className="form-select"
-                    name="estado"
-                    value={formData.estado}
-                    onChange={handleChange}
-                    disabled={loading}
-                  >
-                    <option value="disponible">Disponible</option>
-                    <option value="agotado">Agotado</option>
-                    <option value="proximo_vencer">Próximo a Vencer</option>
-                  </select>
-                </div>
               </div>
 
               <div className="mb-3">
@@ -346,19 +321,6 @@ const ProductoModal = ({
                   disabled={loading}
                 />
                 {errores.vencimiento && <div className="invalid-feedback">{errores.vencimiento}</div>}
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">URL de Imagen (opcional)</label>
-                <input
-                  type="url"
-                  className="form-control"
-                  name="imagen"
-                  value={formData.imagen}
-                  onChange={handleChange}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  disabled={loading}
-                />
               </div>
             </div>
 

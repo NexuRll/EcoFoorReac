@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { suscribirSolicitudesCliente } from '../../services/productos/solicitudService';
+import { 
+  suscribirSolicitudesCliente, 
+  verificarYLimpiarSolicitudesAntiguas,
+  cancelarSolicitudPendiente,
+  puedeCancelarSolicitud,
+  obtenerTiempoTranscurrido
+} from '../../services/productos/solicitudService';
 import { useAuth } from '../../context/AuthContext';
+import Swal from 'sweetalert2';
 
 const CarritoModal = ({ isOpen, onClose }) => {
   const { currentUser } = useAuth();
@@ -11,15 +18,43 @@ const CarritoModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
-    setLoading(true);
+    const cargarSolicitudes = async () => {
+      setLoading(true);
+      
+      try {
+        // Primero, limpiar solicitudes pendientes antiguas (más de 24 horas)
+        const eliminadas = await verificarYLimpiarSolicitudesAntiguas(currentUser.uid);
+        
+        // Mostrar notificación si se eliminaron solicitudes
+        if (eliminadas > 0) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Limpieza automática',
+            text: `Se eliminaron ${eliminadas} solicitudes pendientes de más de 24 horas`,
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+        
+        // Luego, suscribirse a cambios en tiempo real
+        const unsubscribe = suscribirSolicitudesCliente(currentUser.uid, (solicitudesActualizadas) => {
+          setSolicitudes(solicitudesActualizadas);
+          setLoading(false);
+        });
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error al cargar solicitudes:', error);
+        setLoading(false);
+      }
+    };
     
-    // Suscribirse a cambios en tiempo real
-    const unsubscribe = suscribirSolicitudesCliente(currentUser.uid, (solicitudesActualizadas) => {
-      setSolicitudes(solicitudesActualizadas);
-      setLoading(false);
+    cargarSolicitudes().then(unsubscribe => {
+      // Guardar la función de cleanup
+      return unsubscribe;
     });
-
-    return () => unsubscribe();
   }, [isOpen, currentUser]);
 
   const solicitudesFiltradas = solicitudes.filter(solicitud => {
@@ -52,6 +87,63 @@ const CarritoModal = ({ isOpen, onClose }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleCancelarSolicitud = async (solicitud) => {
+    const result = await Swal.fire({
+      title: '¿Cancelar solicitud?',
+      html: `
+        <div class="text-start">
+          <p><strong>Producto:</strong> ${solicitud.nombreProducto}</p>
+          <p><strong>Cantidad:</strong> ${solicitud.cantidad}</p>
+          <p><strong>Precio:</strong> ${solicitud.precioUnitario?.toLocaleString('es-CL')}</p>
+          <p><strong>Solicitado:</strong> ${obtenerTiempoTranscurrido(solicitud.fechaSolicitud)}</p>
+          <hr>
+          <p class="text-muted">Esta acción:</p>
+          <ul class="text-muted">
+            <li>Eliminará la solicitud completamente</li>
+            <li>Restaurará el stock del producto</li>
+            <li>No se podrá deshacer</li>
+          </ul>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, cancelar solicitud',
+      cancelButtonText: 'No, mantener',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const resultado = await cancelarSolicitudPendiente(solicitud.id);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Solicitud cancelada',
+          html: `
+            <div class="text-start">
+              <p><strong>Producto:</strong> ${resultado.nombreProducto}</p>
+              <p><strong>Cantidad cancelada:</strong> ${resultado.cantidad}</p>
+              <p class="text-success"><i class="fas fa-check-circle me-2"></i>Stock restaurado correctamente</p>
+            </div>
+          `,
+          confirmButtonColor: '#28a745',
+          timer: 3000,
+          timerProgressBar: true
+        });
+      } catch (error) {
+        console.error('Error al cancelar solicitud:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'No se pudo cancelar la solicitud',
+          confirmButtonColor: '#28a745'
+        });
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -133,7 +225,7 @@ const CarritoModal = ({ isOpen, onClose }) => {
                     <div className="card">
                       <div className="card-body">
                         <div className="row align-items-center">
-                          <div className="col-md-6">
+                          <div className="col-md-5">
                             <h6 className="card-title mb-1">
                               {solicitud.nombreProducto}
                             </h6>
@@ -142,10 +234,10 @@ const CarritoModal = ({ isOpen, onClose }) => {
                               Precio unitario: ${solicitud.precioUnitario?.toLocaleString('es-CL')}
                             </small>
                           </div>
-                          <div className="col-md-3 text-center">
+                          <div className="col-md-2 text-center">
                             {getEstadoBadge(solicitud.estado)}
                           </div>
-                          <div className="col-md-3 text-end">
+                          <div className="col-md-3 text-center">
                             <small className="text-muted">
                               {formatearFecha(solicitud.fechaSolicitud)}
                             </small>
@@ -156,6 +248,18 @@ const CarritoModal = ({ isOpen, onClose }) => {
                               <small className="text-muted">
                                 Resp: {formatearFecha(solicitud.fechaRespuesta)}
                               </small>
+                            )}
+                          </div>
+                          <div className="col-md-2 text-end">
+                            {puedeCancelarSolicitud(solicitud) && (
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleCancelarSolicitud(solicitud)}
+                                title="Cancelar solicitud"
+                              >
+                                <i className="fas fa-times me-1"></i>
+                                Cancelar
+                              </button>
                             )}
                           </div>
                         </div>

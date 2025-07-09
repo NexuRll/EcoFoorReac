@@ -106,6 +106,9 @@ export const loginUser = async (email, password) => {
       
       // Si no es admin ni empresa, es usuario regular
       return {
+        id: user.uid,
+        uid: user.uid,
+        email: user.email,
         ...user,
         tipo: 'usuario'
       };
@@ -141,23 +144,48 @@ export const loginUser = async (email, password) => {
 // Función para actualizar perfil de usuario
 export const actualizarPerfilUsuario = async (uid, datosActualizados, tipoUsuario) => {
   try {
+    console.log('🔄 Iniciando actualización de perfil:', { uid, tipoUsuario, datosActualizados });
+    
+    // Validar que uid no sea undefined o null
+    if (!uid) {
+      throw new Error('❌ UID es requerido para actualizar el perfil');
+    }
+    
     let coleccion = 'usuarios'; // Por defecto para clientes
     
-    if (tipoUsuario === 'admin') {
+    // Normalizar tipoUsuario para evitar problemas
+    const tipoNormalizado = tipoUsuario || 'cliente';
+    
+    if (tipoNormalizado === 'admin') {
       coleccion = 'Administrador';
-    } else if (tipoUsuario === 'empresa') {
+    } else if (tipoNormalizado === 'empresa') {
       coleccion = 'empresas';
+    } else if (tipoNormalizado === 'usuario' || tipoNormalizado === 'cliente') {
+      coleccion = 'usuarios';
     }
+    
+    console.log('📁 Coleccion a actualizar:', coleccion);
+    
+    // Validar que los datos no contengan valores undefined
+    const datosLimpios = {};
+    Object.keys(datosActualizados).forEach(key => {
+      if (datosActualizados[key] !== undefined && datosActualizados[key] !== null) {
+        datosLimpios[key] = datosActualizados[key];
+      }
+    });
+    
+    console.log('🧹 Datos limpios a actualizar:', datosLimpios);
     
     const userRef = doc(db, coleccion, uid);
     await updateDoc(userRef, {
-      ...datosActualizados,
+      ...datosLimpios,
       updatedAt: new Date().toISOString()
     });
     
+    console.log('✅ Perfil actualizado exitosamente');
     return true;
   } catch (error) {
-    console.error('Error al actualizar perfil:', error);
+    console.error('❌ Error al actualizar perfil:', error);
     throw error;
   }
 };
