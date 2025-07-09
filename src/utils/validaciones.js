@@ -328,6 +328,8 @@ export const validarFormularioEmpresa = (datos, requierePassword = true) => {
  * @returns {string} - Valor formateado
  */
 export const formatearInput = (valor, tipo) => {
+  if (!valor) return '';
+  
   switch (tipo) {
     case 'telefono':
       return valor.replace(/[^0-9+\-\s()]/g, '');
@@ -335,10 +337,18 @@ export const formatearInput = (valor, tipo) => {
       return valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     case 'numeros':
       return valor.replace(/[^0-9]/g, '');
+    case 'correo':
     case 'email':
       return valor.toLowerCase().trim();
     case 'rut':
       return valor.replace(/[^0-9kK\-]/g, '');
+    case 'direccion':
+      // Permitir letras, números, espacios y algunos caracteres especiales comunes en direcciones
+      return valor.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s#°\-.,]/g, '');
+    case 'comuna':
+    case 'pais':
+      // Permitir letras y espacios para nombres de lugares
+      return valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     default:
       return valor;
   }

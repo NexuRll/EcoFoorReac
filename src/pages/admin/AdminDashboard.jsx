@@ -13,7 +13,6 @@ export default function AdminDashboard() {
     totalEmpresas: 0,
     totalUsuarios: 0,
     totalAdmins: 0,
-    totalPedidos: 0,
     loading: true
   });
   const [existeAdmin, setExisteAdmin] = useState(false);
@@ -35,20 +34,10 @@ export default function AdminDashboard() {
         // Obtener estadísticas de empresas
         const empresasSnapshot = await getDocs(collection(db, 'empresas'));
         
-        // Obtener estadísticas de pedidos (si existe la colección)
-        let totalPedidos = 0;
-        try {
-          const pedidosSnapshot = await getDocs(collection(db, 'pedidos'));
-          totalPedidos = pedidosSnapshot.size;
-        } catch (error) {
-          console.log('No se pudieron cargar los pedidos:', error);
-        }
-
         setEstadisticas({
           totalEmpresas: empresasSnapshot.size,
           totalUsuarios: usuarios.length,
           totalAdmins: admins.length,
-          totalPedidos,
           loading: false
         });
       } catch (error) {
@@ -166,7 +155,7 @@ export default function AdminDashboard() {
     <div className="container-fluid">
       {/* Tarjetas de estadísticas */}
       <div className="row mb-4">
-        <div className="col-md-3 mb-3">
+        <div className="col-md-4 mb-3">
           <div className="card bg-primary text-white h-100">
             <div className="card-body d-flex align-items-center">
               <div className="flex-grow-1">
@@ -185,7 +174,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="col-md-3 mb-3">
+        <div className="col-md-4 mb-3">
           <div className="card bg-info text-white h-100">
             <div className="card-body d-flex align-items-center">
               <div className="flex-grow-1">
@@ -204,7 +193,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="col-md-3 mb-3">
+        <div className="col-md-4 mb-3">
           <div className="card bg-warning text-white h-100">
             <div className="card-body d-flex align-items-center">
               <div className="flex-grow-1">
@@ -219,23 +208,6 @@ export default function AdminDashboard() {
               <Link to="/admin/administradores" className="text-white text-decoration-none">
                 <small>Ver administradores <i className="fas fa-arrow-right ms-1"></i></small>
               </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3 mb-3">
-          <div className="card bg-success text-white h-100">
-            <div className="card-body d-flex align-items-center">
-              <div className="flex-grow-1">
-                <h4 className="mb-0">{estadisticas.totalPedidos}</h4>
-                <p className="mb-0">Pedidos Totales</p>
-              </div>
-              <div className="ms-3">
-                <i className="fas fa-shopping-cart fa-2x opacity-75"></i>
-              </div>
-            </div>
-            <div className="card-footer bg-rgba-black-15">
-              <small>Sistema de pedidos</small>
             </div>
           </div>
         </div>
@@ -303,32 +275,6 @@ export default function AdminDashboard() {
                   Firebase conectado
                 </li>
               </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Información del administrador actual */}
-      <div className="row">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header bg-success text-white">
-              <h5 className="mb-0">
-                <i className="fas fa-user-cog me-2"></i>
-                Tu Información de Administrador
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <p><strong>Nombre:</strong> {userData?.Nombre || userData?.nombre || 'No disponible'}</p>
-                  <p><strong>Correo:</strong> {userData?.Correo || userData?.email || 'No disponible'}</p>
-                </div>
-                <div className="col-md-6">
-                  <p><strong>Rol:</strong> {userData?.Rol || 'Administrador'}</p>
-                  <p><strong>Tipo:</strong> {userData?.esAdminPrincipal ? 'Administrador Principal' : 'Administrador'}</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

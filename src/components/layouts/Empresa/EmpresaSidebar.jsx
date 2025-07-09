@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const AdminSidebar = () => {
+const EmpresaSidebar = () => {
   const location = useLocation();
 
   const isActive = (path) => {
@@ -10,24 +10,19 @@ const AdminSidebar = () => {
 
   const menuItems = [
     {
-      path: '/admin/dashboard',
+      path: '/empresa/dashboard',
       icon: 'fas fa-tachometer-alt',
       label: 'Dashboard'
     },
     {
-      path: '/admin/clientes',
-      icon: 'fas fa-users',
-      label: 'Usuarios'
-    },
-    {
-      path: '/admin/empresas',
+      path: '/empresa/perfil',
       icon: 'fas fa-building',
-      label: 'Empresas'
+      label: 'Perfil Empresa'
     },
     {
-      path: '/admin/administradores',
-      icon: 'fas fa-user-shield',
-      label: 'Administradores'
+      path: '/empresa/productos',
+      icon: 'fas fa-boxes',
+      label: 'Productos'
     }
   ];
 
@@ -35,14 +30,14 @@ const AdminSidebar = () => {
     <div className="ecofood-sidebar d-flex flex-column">
       {/* Logo/Brand del Sidebar */}
       <div className="sidebar-brand">
-        <Link to="/admin/dashboard" className="text-white text-decoration-none">
+        <Link to="/empresa/dashboard" className="text-white text-decoration-none">
           <div className="d-flex align-items-center">
             <div className="brand-icon">
               <i className="fas fa-leaf"></i>
             </div>
             <div>
               <h5 className="mb-0">EcoFood</h5>
-              <small className="text-muted">Panel Admin</small>
+              <small className="text-muted">Panel Empresa</small>
             </div>
           </div>
         </Link>
@@ -70,12 +65,12 @@ const AdminSidebar = () => {
       {/* Footer del sidebar */}
       <div className="sidebar-footer">
         <small className="text-muted">
-          <i className="fas fa-shield-alt me-2"></i>
-          Modo Administrador
+          <i className="fas fa-building me-2"></i>
+          Modo Empresa
         </small>
       </div>
     </div>
   );
 };
 
-export default AdminSidebar;
+export default EmpresaSidebar;

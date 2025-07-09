@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatearInput, LIMITES } from '../../../utils/validaciones';
 
 const EmpresaForm = ({
   formData,
@@ -9,6 +10,85 @@ const EmpresaForm = ({
   onChange,
   onCancelar
 }) => {
+  
+  // Función para manejar cambios con validación en tiempo real
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    let valorFormateado = value;
+    
+    // Aplicar formato según el tipo de campo
+    switch (name) {
+      case 'nombre':
+        valorFormateado = formatearInput(value, 'nombre');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.EMPRESA_NOMBRE.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.EMPRESA_NOMBRE.max);
+        }
+        break;
+      case 'email':
+        valorFormateado = formatearInput(value, 'email');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.EMAIL.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.EMAIL.max);
+        }
+        break;
+      case 'rut':
+        valorFormateado = formatearInput(value, 'rut');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.RUT.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.RUT.max);
+        }
+        break;
+      case 'telefono':
+        valorFormateado = formatearInput(value, 'telefono');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.TELEFONO.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.TELEFONO.max);
+        }
+        break;
+      case 'direccion':
+        // Limitar caracteres
+        if (value.length > LIMITES.DIRECCION.max) {
+          valorFormateado = value.substring(0, LIMITES.DIRECCION.max);
+        }
+        break;
+      case 'comuna':
+        valorFormateado = formatearInput(value, 'nombre');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.COMUNA.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.COMUNA.max);
+        }
+        break;
+      case 'password':
+        // Limitar caracteres para contraseña
+        if (value.length > LIMITES.PASSWORD.max) {
+          valorFormateado = value.substring(0, LIMITES.PASSWORD.max);
+        }
+        break;
+      case 'activa':
+        // Manejar checkbox
+        onChange({
+          target: {
+            name,
+            value: checked,
+            type
+          }
+        });
+        return;
+      default:
+        valorFormateado = value;
+    }
+    
+    // Llamar al onChange original con el valor formateado
+    onChange({
+      target: {
+        name,
+        value: valorFormateado,
+        type
+      }
+    });
+  };
+  
   return (
     <div className="card">
       <div className="card-header bg-success text-white">
@@ -23,8 +103,8 @@ const EmpresaForm = ({
           <div className="row">
             {/* Nombre de la empresa */}
             <div className="col-md-6 mb-3">
-              <label htmlFor="nombre" className="form-label">
-                Nombre de la Empresa <span className="text-danger">*</span>
+              <label className="form-label">
+                Nombre de la Empresa *
               </label>
               <input
                 type="text"
@@ -32,22 +112,26 @@ const EmpresaForm = ({
                 id="nombre"
                 name="nombre"
                 value={formData.nombre}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="Ingrese el nombre de la empresa"
-                maxLength="100"
+                maxLength={LIMITES.EMPRESA_NOMBRE.max}
                 required
+                disabled={loading}
               />
               {errores.nombre && (
                 <div className="invalid-feedback">
                   {errores.nombre}
                 </div>
               )}
+              <small className="text-muted">
+                {formData.nombre.length}/{LIMITES.EMPRESA_NOMBRE.max} caracteres - Solo letras y espacios
+              </small>
             </div>
 
             {/* Email */}
             <div className="col-md-6 mb-3">
-              <label htmlFor="email" className="form-label">
-                Email <span className="text-danger">*</span>
+              <label className="form-label">
+                Email *
               </label>
               <input
                 type="email"
@@ -55,28 +139,32 @@ const EmpresaForm = ({
                 id="email"
                 name="email"
                 value={formData.email}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="empresa@ejemplo.com"
-                maxLength="100"
+                maxLength={LIMITES.EMAIL.max}
                 required
-                disabled={modoEdicion} // No permitir cambiar email en edición
+                disabled={modoEdicion || loading} // No permitir cambiar email en edición
               />
               {errores.email && (
                 <div className="invalid-feedback">
                   {errores.email}
                 </div>
               )}
-              {modoEdicion && (
+              {modoEdicion ? (
                 <small className="form-text text-muted">
                   El email no se puede modificar una vez registrada la empresa
+                </small>
+              ) : (
+                <small className="text-muted">
+                  {formData.email.length}/{LIMITES.EMAIL.max} caracteres
                 </small>
               )}
             </div>
 
             {/* RUT */}
             <div className="col-md-6 mb-3">
-              <label htmlFor="rut" className="form-label">
-                RUT <span className="text-danger">*</span>
+              <label className="form-label">
+                RUT *
               </label>
               <input
                 type="text"
@@ -84,28 +172,32 @@ const EmpresaForm = ({
                 id="rut"
                 name="rut"
                 value={formData.rut}
-                onChange={onChange}
-                placeholder="12.345.678-9"
-                maxLength="12"
+                onChange={handleChange}
+                placeholder="12345678-9"
+                maxLength={LIMITES.RUT.max}
                 required
-                disabled={modoEdicion} // No permitir cambiar RUT en edición
+                disabled={modoEdicion || loading} // No permitir cambiar RUT en edición
               />
               {errores.rut && (
                 <div className="invalid-feedback">
                   {errores.rut}
                 </div>
               )}
-              {modoEdicion && (
+              {modoEdicion ? (
                 <small className="form-text text-muted">
                   El RUT no se puede modificar una vez registrada la empresa
+                </small>
+              ) : (
+                <small className="text-muted">
+                  {formData.rut.length}/{LIMITES.RUT.max} caracteres - Solo números, K y guión
                 </small>
               )}
             </div>
 
             {/* Teléfono */}
             <div className="col-md-6 mb-3">
-              <label htmlFor="telefono" className="form-label">
-                Teléfono
+              <label className="form-label">
+                Telefono (opcional)
               </label>
               <input
                 type="tel"
@@ -113,21 +205,25 @@ const EmpresaForm = ({
                 id="telefono"
                 name="telefono"
                 value={formData.telefono}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="+56 9 1234 5678"
-                maxLength="15"
+                maxLength={LIMITES.TELEFONO.max}
+                disabled={loading}
               />
               {errores.telefono && (
                 <div className="invalid-feedback">
                   {errores.telefono}
                 </div>
               )}
+              <small className="text-muted">
+                {formData.telefono.length}/{LIMITES.TELEFONO.max} caracteres - Solo números, +, -, espacios
+              </small>
             </div>
 
             {/* Dirección */}
             <div className="col-md-8 mb-3">
-              <label htmlFor="direccion" className="form-label">
-                Dirección
+              <label className="form-label">
+                Direccion (opcional)
               </label>
               <input
                 type="text"
@@ -135,21 +231,25 @@ const EmpresaForm = ({
                 id="direccion"
                 name="direccion"
                 value={formData.direccion}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="Calle, número, depto/oficina"
-                maxLength="200"
+                maxLength={LIMITES.DIRECCION.max}
+                disabled={loading}
               />
               {errores.direccion && (
                 <div className="invalid-feedback">
                   {errores.direccion}
                 </div>
               )}
+              <small className="text-muted">
+                {formData.direccion.length}/{LIMITES.DIRECCION.max} caracteres
+              </small>
             </div>
 
             {/* Comuna */}
             <div className="col-md-4 mb-3">
-              <label htmlFor="comuna" className="form-label">
-                Comuna
+              <label className="form-label">
+                Comuna (opcional)
               </label>
               <input
                 type="text"
@@ -157,22 +257,26 @@ const EmpresaForm = ({
                 id="comuna"
                 name="comuna"
                 value={formData.comuna}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="Comuna"
-                maxLength="50"
+                maxLength={LIMITES.COMUNA.max}
+                disabled={loading}
               />
               {errores.comuna && (
                 <div className="invalid-feedback">
                   {errores.comuna}
                 </div>
               )}
+              <small className="text-muted">
+                {formData.comuna.length}/{LIMITES.COMUNA.max} caracteres - Solo letras
+              </small>
             </div>
 
             {/* Contraseña - Solo para nuevas empresas */}
             {!modoEdicion && (
               <div className="col-12 mb-3">
-                <label htmlFor="password" className="form-label">
-                  Contraseña <span className="text-danger">*</span>
+                <label className="form-label">
+                  Contraseña *
                 </label>
                 <input
                   type="password"
@@ -180,18 +284,20 @@ const EmpresaForm = ({
                   id="password"
                   name="password"
                   value={formData.password}
-                  onChange={onChange}
-                  placeholder="Mínimo 6 caracteres"
-                  minLength="6"
+                  onChange={handleChange}
+                  placeholder="Mínimo 6 caracteres con letras y números"
+                  maxLength={LIMITES.PASSWORD.max}
+                  minLength={LIMITES.PASSWORD.min}
                   required
+                  disabled={loading}
                 />
                 {errores.password && (
                   <div className="invalid-feedback">
                     {errores.password}
                   </div>
                 )}
-                <small className="form-text text-muted">
-                  La empresa recibirá un email de verificación para activar su cuenta
+                <small className="text-muted">
+                  {formData.password.length}/{LIMITES.PASSWORD.max} caracteres - Debe contener letras y números
                 </small>
               </div>
             )}
@@ -206,7 +312,8 @@ const EmpresaForm = ({
                     id="activa"
                     name="activa"
                     checked={formData.activa}
-                    onChange={onChange}
+                    onChange={handleChange}
+                    disabled={loading}
                   />
                   <label className="form-check-label" htmlFor="activa">
                     Empresa activa
@@ -255,4 +362,4 @@ const EmpresaForm = ({
   );
 };
 
-export default EmpresaForm; 
+export default EmpresaForm;

@@ -1,29 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { suscribirSolicitudesEmpresa } from '../../../services/productos/solicitudService';
-import SolicitudesModal from '../../empresa/SolicitudesModal';
+import { useAuth } from '../../../context/AuthContext';
+import { suscribirSolicitudesCliente } from '../../../services/productos/solicitudService';
+import CarritoModal from '../../cliente/CarritoModal';
 import Swal from 'sweetalert2';
 
-const EmpresaHeader = () => {
-  const { userData, currentUser, logout } = useAuth();
+const ClienteHeader = () => {
+  const { userData, logout, currentUser } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showSolicitudes, setShowSolicitudes] = useState(false);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState([]);
+  const [showCarrito, setShowCarrito] = useState(false);
+  const [solicitudes, setSolicitudes] = useState([]);
 
-  // Suscribirse a cambios en las solicitudes
+  // Suscribirse a cambios en las solicitudes para mostrar contador
   useEffect(() => {
     if (!currentUser) return;
 
-    const unsubscribe = suscribirSolicitudesEmpresa(currentUser.uid, (solicitudesActualizadas) => {
-      setSolicitudesPendientes(solicitudesActualizadas);
+    const unsubscribe = suscribirSolicitudesCliente(currentUser.uid, (solicitudesActualizadas) => {
+      setSolicitudes(solicitudesActualizadas);
     });
 
     return () => unsubscribe();
   }, [currentUser]);
-
-  const cantidadPendientes = solicitudesPendientes.length;
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -59,6 +57,8 @@ const EmpresaHeader = () => {
     }
   };
 
+  const totalSolicitudes = solicitudes.length;
+
   return (
     <>
       <header className="ecofood-header navbar navbar-expand-lg">
@@ -76,19 +76,19 @@ const EmpresaHeader = () => {
           {/* Spacer para empujar el contenido a la derecha */}
           <div className="flex-grow-1"></div>
 
-          {/* Notificaciones y Menú de usuario (derecha) */}
+          {/* Carrito y Menú de usuario (derecha) */}
           <div className="d-flex align-items-center">
-            {/* Botón de Notificaciones */}
+            {/* Botón del Carrito */}
             <button 
               className="btn btn-outline-success position-relative me-3"
-              onClick={() => setShowSolicitudes(true)}
-              title="Solicitudes Pendientes"
+              onClick={() => setShowCarrito(true)}
+              title="Mi Carrito"
             >
-              <i className="fas fa-bell"></i>
-              {cantidadPendientes > 0 && (
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                  {cantidadPendientes}
-                  <span className="visually-hidden">solicitudes pendientes</span>
+              <i className="fas fa-shopping-cart"></i>
+              {totalSolicitudes > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+                  {totalSolicitudes}
+                  <span className="visually-hidden">solicitudes en carrito</span>
                 </span>
               )}
             </button>
@@ -101,10 +101,10 @@ const EmpresaHeader = () => {
                 style={{ textDecoration: 'none' }}
               >
                 <span className="me-2 d-none d-md-inline">
-                  {userData?.nombre || userData?.nombreEmpresa || 'Empresa'}
+                  {userData?.nombre?.split(' ')[0] || 'Cliente'}
                 </span>
                 <div className="user-avatar">
-                  <i className="fas fa-building"></i>
+                  <i className="fas fa-user-circle"></i>
                 </div>
               </button>
 
@@ -116,14 +116,14 @@ const EmpresaHeader = () => {
                   <div className="dropdown-header bg-light">
                     <div className="d-flex align-items-center">
                       <div className="user-avatar-large">
-                        <i className="fas fa-building"></i>
+                        <i className="fas fa-user-circle"></i>
                       </div>
                       <div>
-                        <strong>{userData?.nombre || userData?.nombreEmpresa || 'Empresa'}</strong>
-                        <small className="text-muted d-block">{userData?.email || userData?.correo || 'empresa@ecofood.com'}</small>
+                        <strong>{userData?.nombre || 'Cliente'}</strong>
+                        <small className="text-muted d-block">{userData?.email || userData?.correo || 'cliente@ecofood.com'}</small>
                         <small className="text-success d-block">
-                          <i className="fas fa-building me-1"></i>
-                          Empresa
+                          <i className="fas fa-user me-1"></i>
+                          Cliente
                         </small>
                       </div>
                     </div>
@@ -131,9 +131,17 @@ const EmpresaHeader = () => {
                   
                   <div className="dropdown-divider"></div>
                   
-                  <button className="dropdown-item" onClick={() => navigate('/empresa/perfil')}>
-                    <i className="fas fa-user me-2"></i>
+                  <button className="dropdown-item" onClick={() => navigate('/cliente/perfil')}>
+                    <i className="fas fa-user-edit me-2"></i>
                     Editar Perfil
+                  </button>
+                  
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => setShowCarrito(true)}
+                  >
+                    <i className="fas fa-shopping-cart me-2"></i>
+                    Mi Carrito
                   </button>
                   
                   <div className="dropdown-divider"></div>
@@ -158,13 +166,13 @@ const EmpresaHeader = () => {
         )}
       </header>
 
-      {/* Modal de Solicitudes */}
-      <SolicitudesModal 
-        isOpen={showSolicitudes} 
-        onClose={() => setShowSolicitudes(false)} 
+      {/* Modal del Carrito */}
+      <CarritoModal 
+        isOpen={showCarrito} 
+        onClose={() => setShowCarrito(false)} 
       />
     </>
   );
 };
 
-export default EmpresaHeader;
+export default ClienteHeader;

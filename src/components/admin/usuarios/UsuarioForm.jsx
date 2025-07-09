@@ -1,6 +1,7 @@
 import React from 'react';
 import SelectorPaisComunaAPI from '../../common/SelectorPaisComunaAPI';
 import LoadingSpinner from '../../common/ui/LoadingSpinner';
+import { formatearInput, LIMITES } from '../../../utils/validaciones';
 
 const UsuarioForm = ({
   formData,
@@ -12,6 +13,64 @@ const UsuarioForm = ({
   onSubmit,
   onCancel
 }) => {
+  // Función para manejar cambios con validación en tiempo real
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let valorFormateado = value;
+    
+    // Aplicar formato según el tipo de campo
+    switch (name) {
+      case 'nombre':
+        valorFormateado = formatearInput(value, 'nombre');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.NOMBRE.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.NOMBRE.max);
+        }
+        break;
+      case 'correo':
+        valorFormateado = formatearInput(value, 'correo');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.EMAIL.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.EMAIL.max);
+        }
+        break;
+      case 'telefono':
+        valorFormateado = formatearInput(value, 'telefono');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.TELEFONO.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.TELEFONO.max);
+        }
+        break;
+      case 'direccion':
+        valorFormateado = formatearInput(value, 'direccion');
+        // Limitar caracteres
+        if (valorFormateado.length > LIMITES.DIRECCION.max) {
+          valorFormateado = valorFormateado.substring(0, LIMITES.DIRECCION.max);
+        }
+        break;
+      case 'password':
+        // Limitar caracteres para contraseña
+        if (value.length > LIMITES.PASSWORD.max) {
+          valorFormateado = value.substring(0, LIMITES.PASSWORD.max);
+        }
+        break;
+      case 'pais':
+      case 'comuna':
+        // Para país y comuna, formatear como nombres
+        valorFormateado = formatearInput(value, 'pais');
+        break;
+      default:
+        valorFormateado = value;
+    }
+    
+    // Llamar al onChange original con el valor formateado
+    onChange({
+      target: {
+        name,
+        value: valorFormateado
+      }
+    });
+  };
   const getEmailValidationIcon = () => {
     if (validacionEmail.validando) {
       return <div className="spinner-border spinner-border-sm text-primary" role="status"></div>;
@@ -37,7 +96,7 @@ const UsuarioForm = ({
       <div className="card-body">
         {loading && <LoadingSpinner text={isEditing ? "Actualizando cliente..." : "Creando cliente..."} />}
         
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} autoComplete="off">
           <div className="row">
             {/* Nombre */}
             <div className="col-md-6 mb-3">
@@ -47,11 +106,17 @@ const UsuarioForm = ({
                 className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
                 name="nombre"
                 value={formData.nombre}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="Ingrese el nombre completo"
+                maxLength={LIMITES.NOMBRE.max}
                 disabled={loading}
+                autoComplete="new-password"
+                required
               />
               {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
+              <small className="text-muted">
+                {formData.nombre.length}/{LIMITES.NOMBRE.max} caracteres - Solo letras y espacios
+              </small>
             </div>
 
             {/* Email */}
@@ -59,13 +124,16 @@ const UsuarioForm = ({
               <label className="form-label">Email *</label>
               <div className="input-group">
                 <input
-                  type="email"
-                  className={`form-control ${errores.correo ? 'is-invalid' : validacionEmail.esUnico === true ? 'is-valid' : ''}`}
-                  name="correo"
-                  value={formData.correo}
-                  onChange={onChange}
-                  placeholder="ejemplo@correo.com"
-                  disabled={loading || isEditing} // No permitir editar email
+                type="email"
+                className={`form-control ${errores.correo ? 'is-invalid' : validacionEmail.esUnico === true ? 'is-valid' : ''}`}
+                name="correo"
+                value={formData.correo}
+                onChange={handleChange}
+                placeholder="ejemplo@correo.com"
+                maxLength={LIMITES.EMAIL.max}
+                disabled={loading || isEditing} // No permitir editar email
+                  autoComplete="new-password"
+                  required
                 />
                 <span className="input-group-text">
                   {getEmailValidationIcon()}
@@ -77,11 +145,15 @@ const UsuarioForm = ({
                   {validacionEmail.mensaje}
                 </div>
               )}
-              {isEditing && (
+              {isEditing ? (
                 <div className="form-text text-muted">
                   <i className="fas fa-info-circle me-1"></i>
                   El email no se puede modificar por seguridad
                 </div>
+              ) : (
+                <small className="text-muted">
+                  {formData.correo.length}/{LIMITES.EMAIL.max} caracteres
+                </small>
               )}
             </div>
           </div>
@@ -96,11 +168,17 @@ const UsuarioForm = ({
                   className={`form-control ${errores.password ? 'is-invalid' : ''}`}
                   name="password"
                   value={formData.password}
-                  onChange={onChange}
+                  onChange={handleChange}
                   placeholder="Mínimo 6 caracteres"
+                  maxLength={LIMITES.PASSWORD.max}
+                  minLength={LIMITES.PASSWORD.min}
                   disabled={loading}
+                  required
                 />
                 {errores.password && <div className="invalid-feedback">{errores.password}</div>}
+                <small className="text-muted">
+                  {formData.password.length}/{LIMITES.PASSWORD.max} caracteres - Debe contener letras y números
+                </small>
               </div>
             )}
 
@@ -112,11 +190,16 @@ const UsuarioForm = ({
                 className={`form-control ${errores.telefono ? 'is-invalid' : ''}`}
                 name="telefono"
                 value={formData.telefono}
-                onChange={onChange}
+                onChange={handleChange}
                 placeholder="+56 9 1234 5678"
+                maxLength={LIMITES.TELEFONO.max}
                 disabled={loading}
+                autoComplete="new-password"
               />
               {errores.telefono && <div className="invalid-feedback">{errores.telefono}</div>}
+              <small className="text-muted">
+                {formData.telefono.length}/{LIMITES.TELEFONO.max} caracteres - Solo números, +, -, espacios
+              </small>
             </div>
           </div>
 
@@ -124,8 +207,8 @@ const UsuarioForm = ({
           <SelectorPaisComunaAPI
             paisSeleccionado={formData.pais}
             comunaSeleccionada={formData.comuna}
-            onPaisChange={(pais) => onChange({ target: { name: 'pais', value: pais } })}
-            onComunaChange={(comuna) => onChange({ target: { name: 'comuna', value: comuna } })}
+            onPaisChange={(pais) => handleChange({ target: { name: 'pais', value: pais } })}
+            onComunaChange={(comuna) => handleChange({ target: { name: 'comuna', value: comuna } })}
             errores={errores}
             disabled={loading}
           />
@@ -137,12 +220,17 @@ const UsuarioForm = ({
               className={`form-control ${errores.direccion ? 'is-invalid' : ''}`}
               name="direccion"
               value={formData.direccion}
-              onChange={onChange}
+              onChange={handleChange}
               placeholder="Dirección completa (opcional)"
               rows="2"
+              maxLength={LIMITES.DIRECCION.max}
               disabled={loading}
+              autoComplete="new-password"
             />
             {errores.direccion && <div className="invalid-feedback">{errores.direccion}</div>}
+            <small className="text-muted">
+              {formData.direccion.length}/{LIMITES.DIRECCION.max} caracteres
+            </small>
           </div>
 
           {/* Botones */}

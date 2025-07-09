@@ -75,14 +75,14 @@ const verificarEmailExistente = async (email) => {
  */
 export const registrarClienteConAuth = async (clienteData) => {
   try {
-    const { nombre, email, password, pais, comuna, direccion, telefono } = clienteData;
+    const { nombre, correo, password, pais, comuna, direccion, telefono } = clienteData;
     
     // Validar datos requeridos
-    if (!nombre || !email || !password) {
-      throw new Error('Faltan campos requeridos: nombre, email y password');
+    if (!nombre || !correo || !password) {
+      throw new Error('Faltan campos requeridos: nombre, correo y password');
     }
     
-    const emailLimpio = email.trim().toLowerCase();
+    const emailLimpio = correo.trim().toLowerCase();
     
     // Verificar si el email ya está en uso
     const emailExiste = await verificarEmailExistente(emailLimpio);

@@ -1,0 +1,230 @@
+/* =================================
+   LAYOUTS - SIDEBAR Y HEADERS
+   ================================= */
+
+/* Sidebar general */
+.ecofood-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  z-index: 1000;
+}
+
+.ecofood-sidebar .sidebar-brand {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ecofood-sidebar .sidebar-brand .brand-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+}
+
+.ecofood-sidebar .sidebar-nav {
+  flex-grow: 1;
+  padding: 1rem 0;
+}
+
+.ecofood-sidebar .nav-link {
+  color: white !important;
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  border: none;
+  background: none;
+}
+
+.ecofood-sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateX(5px);
+  color: white !important;
+}
+
+.ecofood-sidebar .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  color: white !important;
+}
+
+.ecofood-sidebar .nav-link i {
+  width: 20px;
+  margin-right: 0.75rem;
+  text-align: center;
+}
+
+.ecofood-sidebar .sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Header general */
+.ecofood-header {
+  min-height: 70px;
+  padding: 0.75rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.ecofood-header .brand-icon {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-right: 0.75rem;
+}
+
+.ecofood-header .user-avatar {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.ecofood-header .dropdown-menu.show {
+  z-index: 1021;
+}
+
+.ecofood-header .dropdown-header .user-avatar-large {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-right: 12px;
+}
+
+/* Layout principal */
+.ecofood-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.ecofood-main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Evita overflow en flex */
+}
+
+.ecofood-main-content main {
+  flex-grow: 1;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  overflow-x: auto; /* Permite scroll horizontal si es necesario */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ecofood-sidebar {
+    width: 100%;
+    position: relative;
+    min-height: auto;
+  }
+  
+  .ecofood-layout {
+    flex-direction: column;
+  }
+  
+  .ecofood-sidebar .nav-link {
+    margin: 0.25rem 0;
+    padding: 0.75rem 1rem;
+  }
+  
+  .ecofood-sidebar .sidebar-brand,
+  .ecofood-sidebar .sidebar-footer {
+    text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .ecofood-main-content main {
+    padding: 1rem;
+  }
+  
+  .ecofood-header {
+    min-height: 60px;
+    padding: 0.5rem 1rem;
+  }
+  
+  .ecofood-header .brand-icon {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .ecofood-header .user-avatar {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Mejoras para Bootstrap compatibility */
+.ecofood-sidebar .nav-pills .nav-link {
+  background: none;
+  border: none;
+}
+
+.ecofood-sidebar .nav-pills .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Focus states para accesibilidad */
+.ecofood-sidebar .nav-link:focus,
+.ecofood-header .btn:focus {
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  outline: none;
+}
+
+/* Smooth scrolling para sidebar en móviles */
+@media (max-width: 768px) {
+  .ecofood-sidebar {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Utilidades adicionales */
+.text-success-custom {
+  color: #28a745 !important;
+}
+
+.bg-success-custom {
+  background-color: #28a745 !important;
+}
+
+.btn-outline-success-custom {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-outline-success-custom:hover {
+  color: white;
+  background-color: #28a745;
+  border-color: #28a745;
+}

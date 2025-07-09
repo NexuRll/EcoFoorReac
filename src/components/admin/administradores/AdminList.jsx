@@ -41,18 +41,11 @@ const AdminList = ({
 
   return (
     <div className="card">
-      <div className="card-header d-flex justify-content-between align-items-center">
+      <div className="card-header">
         <h5 className="mb-0">
           <i className="fas fa-user-shield me-2"></i>
           Administradores del Sistema ({administradores.length})
         </h5>
-        <button 
-          className="btn btn-primary"
-          onClick={onNuevo}
-        >
-          <i className="fas fa-plus me-2"></i>
-          Nuevo Administrador
-        </button>
       </div>
       
       <div className="card-body p-0">

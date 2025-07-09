@@ -212,11 +212,10 @@ const UsuariosPage = () => {
   // Manejar cambios en el formulario principal
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const valorFormateado = formatearInput(name, value);
     
     setFormData(prev => ({
       ...prev,
-      [name]: valorFormateado
+      [name]: value
     }));
 
     // Limpiar error específico cuando el usuario empiece a escribir
@@ -228,8 +227,8 @@ const UsuariosPage = () => {
     }
 
     // Validación de email único con debounce
-    if (name === 'correo' && valorFormateado && vista === 'crear') {
-      validarEmailUnicoConDebounce(valorFormateado, setValidacionEmail);
+    if (name === 'correo' && value && vista === 'crear') {
+      validarEmailUnicoConDebounce(value, setValidacionEmail);
     }
   };
 
@@ -256,7 +255,7 @@ const UsuariosPage = () => {
     e.preventDefault();
     
     // Validar formulario
-    const erroresValidacion = validarFormularioCliente(formData, vista === 'editar');
+    const erroresValidacion = validarFormularioCliente(formData, vista !== 'crear');
     
     if (Object.keys(erroresValidacion).length > 0) {
       setErrores(erroresValidacion);
